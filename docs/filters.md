@@ -40,7 +40,9 @@
 - CIContext は使い回す（毎フレーム生成しない）
 - 保存時のみフル解像度で処理し、プレビューは表示解像度で処理する
 
-## 未決事項
+## 決定事項
 
-- プレビュー描画方式（CIContext + Metal レイヤーか、MTKView か）
-- 保存形式（JPEG / HEIC）と EXIF の扱い
+- **プレビュー描画方式**: MTKView + Metal バックの CIContext
+  （SwiftUI からは UIViewRepresentable でラップ。30fps 維持を優先）
+- **保存形式**: HEIC（非対応環境のみ JPEG フォールバック）
+- **EXIF**: 撮影日時・画像の向きは保持。位置情報は付与しない

@@ -59,3 +59,14 @@ AVCaptureSession
 - **CameraService**: セッション起動/停止、権限リクエスト、前面/背面切替、フレーム供給
 - **ImageProcessor**: CIFilter チェーンの構築、Crop 領域の計算、CGImage への変換
 - **PhotoLibraryService**: 保存権限、PHPhotoLibrary への書き込み
+
+## 技術方針（決定事項）
+
+| 項目 | 決定 |
+|---|---|
+| 最低対応 OS | iOS 17 |
+| 中央フレーム | 3:4 固定（プリセットによらず共通） |
+| カメラ切替 | 前面/背面のみ（レンズ切替は MVP 外） |
+| プレビュー描画 | MTKView + Metal バックの CIContext |
+| 保存形式 | HEIC（非対応環境のみ JPEG フォールバック） |
+| メタデータ | 撮影日時・向きは保持、位置情報は付与しない |

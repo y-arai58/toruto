@@ -16,7 +16,7 @@
 ## SwiftUI
 
 - View は小さく分割し、`Features/Camera/Components/` に切り出す
-- 状態管理: ViewModel は `@Observable`（または ObservableObject）で統一
+- 状態管理: ViewModel は `@Observable` で統一（最低対応が iOS 17 のため）
 - View にビジネスロジックを書かない。ViewModel → Service に委譲する
 - プレビュー（#Preview）を各 View に用意する
 
