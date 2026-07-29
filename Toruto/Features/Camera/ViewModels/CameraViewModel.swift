@@ -17,9 +17,12 @@ final class CameraViewModel {
         case failed
     }
 
+    static let exposureRange: ClosedRange<Double> = -2...2
+
     private(set) var status: Status = .idle
     private(set) var isCapturing = false
     private(set) var isSwitchingCamera = false
+    private(set) var exposureBias: Double = 0
     private(set) var lastCapturedImage: UIImage?
     private(set) var presets: [CameraPreset] = []
     private(set) var currentPreset: CameraPreset?
@@ -73,6 +76,15 @@ final class CameraViewModel {
         defer { isSwitchingCamera = false }
         // 失敗時は現在のカメラのまま継続する
         try? await cameraService.switchCamera()
+    }
+
+    /// 露出補正（EV）。UI からは -2〜+2 の範囲で渡す
+    func adjustExposure(_ bias: Double) async {
+        guard status == .running else { return }
+        let clamped = min(max(bias, Self.exposureRange.lowerBound), Self.exposureRange.upperBound)
+        exposureBias = clamped
+        // 失敗しても撮影は継続できるため UI には出さない
+        try? await cameraService.setExposureBias(Float(clamped))
     }
 
     func startSession() async {

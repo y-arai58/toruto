@@ -3,6 +3,8 @@ import SwiftUI
 struct CameraView: View {
     @State private var viewModel: CameraViewModel
     @State private var isFlashing = false
+    @State private var isExposureVisible = false
+    @State private var exposureValue = 0.0
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
 
@@ -23,6 +25,10 @@ struct CameraView: View {
                 previewFrame
 
                 saveErrorBanner
+
+                if isExposureVisible {
+                    exposureSlider
+                }
 
                 PresetSelector(
                     presets: viewModel.presets,
@@ -102,6 +108,29 @@ struct CameraView: View {
         }
     }
 
+    private var exposureSlider: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "sun.min")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.6))
+            Slider(value: $exposureValue, in: CameraViewModel.exposureRange)
+                .tint(.white)
+                .onChange(of: exposureValue) { _, value in
+                    Task { await viewModel.adjustExposure(value) }
+                }
+            Image(systemName: "sun.max")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.6))
+            Text(String(format: "%+.1f", exposureValue))
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.white)
+                .frame(width: 40, alignment: .trailing)
+        }
+        .padding(.horizontal, 24)
+        .transition(.opacity)
+        .accessibilityLabel("露出補正")
+    }
+
     @ViewBuilder
     private var saveErrorBanner: some View {
         switch viewModel.saveError {
@@ -129,33 +158,55 @@ struct CameraView: View {
         }
     }
 
+    /// シャッターは ZStack で常に画面中央に固定する
     private var bottomBar: some View {
-        HStack {
-            capturedThumbnail
-                .frame(width: 48, height: 48)
+        ZStack {
+            HStack(spacing: 16) {
+                capturedThumbnail
+                    .frame(width: 48, height: 48)
 
-            Spacer()
+                exposureToggleButton
+
+                Spacer()
+
+                switchCameraButton
+            }
 
             ShutterButton(isEnabled: viewModel.status == .running && !viewModel.isCapturing) {
                 capture()
             }
-
-            Spacer()
-
-            Button {
-                Task { await viewModel.switchCamera() }
-            } label: {
-                Image(systemName: "arrow.triangle.2.circlepath.camera")
-                    .font(.title3)
-                    .foregroundStyle(.white)
-                    .frame(width: 48, height: 48)
-                    .background(.white.opacity(0.12), in: Circle())
-            }
-            .disabled(viewModel.status != .running || viewModel.isSwitchingCamera)
-            .opacity(viewModel.status == .running ? 1 : 0.4)
-            .accessibilityLabel("カメラを切り替え")
         }
         .padding(.horizontal, 32)
+    }
+
+    private var exposureToggleButton: some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.15)) {
+                isExposureVisible.toggle()
+            }
+        } label: {
+            Image(systemName: isExposureVisible ? "sun.max.fill" : "sun.max")
+                .font(.title3)
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(.white.opacity(isExposureVisible ? 0.25 : 0.12), in: Circle())
+        }
+        .accessibilityLabel("露出補正を表示")
+    }
+
+    private var switchCameraButton: some View {
+        Button {
+            Task { await viewModel.switchCamera() }
+        } label: {
+            Image(systemName: "arrow.triangle.2.circlepath.camera")
+                .font(.title3)
+                .foregroundStyle(.white)
+                .frame(width: 48, height: 48)
+                .background(.white.opacity(0.12), in: Circle())
+        }
+        .disabled(viewModel.status != .running || viewModel.isSwitchingCamera)
+        .opacity(viewModel.status == .running ? 1 : 0.4)
+        .accessibilityLabel("カメラを切り替え")
     }
 
     @ViewBuilder
