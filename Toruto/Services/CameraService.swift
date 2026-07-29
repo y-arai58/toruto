@@ -18,6 +18,8 @@ protocol CameraService: AnyObject {
     func start() async throws
     /// セッションを停止する
     func stop() async
+    /// 前面/背面カメラを切り替える
+    func switchCamera() async throws
     /// 静止画を撮影し、画像データを返す
     func capturePhoto() async throws -> Data
 }

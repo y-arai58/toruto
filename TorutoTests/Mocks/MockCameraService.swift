@@ -5,11 +5,13 @@ import Foundation
 final class MockCameraService: CameraService {
     var authorizationGranted = true
     var startError: Error?
+    var switchCameraError: Error?
     var captureResult: Result<Data, Error> = .failure(CameraServiceError.captureFailed)
 
     private(set) var startCallCount = 0
     private(set) var stopCallCount = 0
     private(set) var captureCallCount = 0
+    private(set) var switchCameraCallCount = 0
 
     private var previewContinuation: AsyncStream<CIImage>.Continuation?
 
@@ -35,6 +37,13 @@ final class MockCameraService: CameraService {
 
     func stop() async {
         stopCallCount += 1
+    }
+
+    func switchCamera() async throws {
+        switchCameraCallCount += 1
+        if let switchCameraError {
+            throw switchCameraError
+        }
     }
 
     func capturePhoto() async throws -> Data {

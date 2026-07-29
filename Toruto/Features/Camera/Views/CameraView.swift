@@ -66,6 +66,10 @@ struct CameraView: View {
         }
         .aspectRatio(3 / 4, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 4))
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .strokeBorder(.white.opacity(0.25), lineWidth: 1)
+        )
         .frame(maxHeight: .infinity)
     }
 
@@ -138,9 +142,18 @@ struct CameraView: View {
 
             Spacer()
 
-            // 前面/背面切替の予約スペース（Phase 1 後半で実装）
-            Color.clear
-                .frame(width: 48, height: 48)
+            Button {
+                Task { await viewModel.switchCamera() }
+            } label: {
+                Image(systemName: "arrow.triangle.2.circlepath.camera")
+                    .font(.title3)
+                    .foregroundStyle(.white)
+                    .frame(width: 48, height: 48)
+                    .background(.white.opacity(0.12), in: Circle())
+            }
+            .disabled(viewModel.status != .running || viewModel.isSwitchingCamera)
+            .opacity(viewModel.status == .running ? 1 : 0.4)
+            .accessibilityLabel("カメラを切り替え")
         }
         .padding(.horizontal, 32)
     }

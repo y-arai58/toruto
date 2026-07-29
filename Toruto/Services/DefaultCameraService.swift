@@ -11,6 +11,8 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
     private let sessionQueue = DispatchQueue(label: "com.thirdscope.toruto.camera.session")
     private let videoQueue = DispatchQueue(label: "com.thirdscope.toruto.camera.video")
     private var isConfigured = false
+    private var position: AVCaptureDevice.Position = .back
+    private var currentInput: AVCaptureDeviceInput?
 
     private let continuationsLock = NSLock()
     private var frameContinuations: [UUID: AsyncStream<CIImage>.Continuation] = [:]
@@ -74,6 +76,19 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         }
     }
 
+    func switchCamera() async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            sessionQueue.async {
+                do {
+                    try self.reconfigureInput(to: self.position == .back ? .front : .back)
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
     func capturePhoto() async throws -> Data {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
             sessionQueue.async {
@@ -104,12 +119,13 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
 
         session.sessionPreset = .photo
 
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
+        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position),
               let input = try? AVCaptureDeviceInput(device: device),
               session.canAddInput(input) else {
             throw CameraServiceError.deviceUnavailable
         }
         session.addInput(input)
+        currentInput = input
 
         videoOutput.videoSettings = [
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
@@ -122,14 +138,48 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         session.addOutput(videoOutput)
         session.addOutput(photoOutput)
 
-        // ポートレート固定
+        updateConnections()
+        isConfigured = true
+    }
+
+    /// sessionQueue 上で呼ぶこと。入力を指定位置のカメラへ付け替える
+    private func reconfigureInput(to newPosition: AVCaptureDevice.Position) throws {
+        guard isConfigured else { throw CameraServiceError.configurationFailed }
+
+        session.beginConfiguration()
+        defer { session.commitConfiguration() }
+
+        if let currentInput {
+            session.removeInput(currentInput)
+        }
+        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: newPosition),
+              let input = try? AVCaptureDeviceInput(device: device),
+              session.canAddInput(input) else {
+            // 失敗時は元の入力に戻す
+            if let currentInput, session.canAddInput(currentInput) {
+                session.addInput(currentInput)
+                updateConnections()
+            }
+            throw CameraServiceError.deviceUnavailable
+        }
+        session.addInput(input)
+        currentInput = input
+        position = newPosition
+        updateConnections()
+    }
+
+    /// sessionQueue 上で呼ぶこと。ポートレート固定 + 前面カメラはミラー表示
+    private func updateConnections() {
         for connection in [videoOutput.connection(with: .video), photoOutput.connection(with: .video)] {
-            if let connection, connection.isVideoRotationAngleSupported(90) {
+            guard let connection else { continue }
+            if connection.isVideoRotationAngleSupported(90) {
                 connection.videoRotationAngle = 90
             }
+            if connection.isVideoMirroringSupported {
+                connection.automaticallyAdjustsVideoMirroring = false
+                connection.isVideoMirrored = (position == .front)
+            }
         }
-
-        isConfigured = true
     }
 }
 
