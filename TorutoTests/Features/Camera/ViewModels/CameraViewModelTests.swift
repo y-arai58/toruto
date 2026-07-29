@@ -9,14 +9,16 @@ struct CameraViewModelTests {
         processor: MockImageProcessor = MockImageProcessor(),
         repository: MockPresetRepository = MockPresetRepository(),
         photoLibrary: MockPhotoLibraryService = MockPhotoLibraryService(),
-        favoriteStore: MockFavoriteStore = MockFavoriteStore()
+        favoriteStore: MockFavoriteStore = MockFavoriteStore(),
+        settingsStore: MockSettingsStore = MockSettingsStore()
     ) -> CameraViewModel {
         CameraViewModel(
             cameraService: service,
             imageProcessor: processor,
             presetRepository: repository,
             photoLibraryService: photoLibrary,
-            favoriteStore: favoriteStore
+            favoriteStore: favoriteStore,
+            settingsStore: settingsStore
         )
     }
 
@@ -214,6 +216,47 @@ struct CameraViewModelTests {
 
         #expect(viewModel.presets.map(\.id) == ["b", "a"])
         #expect(viewModel.currentPreset?.id == "b")
+    }
+
+    @Test
+    func toggleDateStamp_切り替えが永続化される() {
+        let store = MockSettingsStore()
+        let viewModel = makeViewModel(settingsStore: store)
+
+        viewModel.toggleDateStamp()
+
+        #expect(viewModel.isDateStampEnabled)
+        #expect(store.isDateStampEnabled)
+    }
+
+    @Test
+    func capturePhoto_日付スタンプONのとき焼き込みが行われる() async {
+        let service = MockCameraService()
+        service.captureResult = .success(Self.makeImageData())
+        let processor = MockImageProcessor()
+        let viewModel = makeViewModel(
+            service: service,
+            processor: processor,
+            settingsStore: MockSettingsStore(isDateStampEnabled: true)
+        )
+        await viewModel.startSession()
+
+        await viewModel.capturePhoto()
+
+        #expect(processor.stampDateCallCount == 1)
+    }
+
+    @Test
+    func capturePhoto_日付スタンプOFFのとき焼き込みは行われない() async {
+        let service = MockCameraService()
+        service.captureResult = .success(Self.makeImageData())
+        let processor = MockImageProcessor()
+        let viewModel = makeViewModel(service: service, processor: processor)
+        await viewModel.startSession()
+
+        await viewModel.capturePhoto()
+
+        #expect(processor.stampDateCallCount == 0)
     }
 
     @Test

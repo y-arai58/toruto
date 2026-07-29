@@ -1,9 +1,11 @@
 import CoreGraphics
 import CoreImage
+import Foundation
 @testable import Toruto
 
 final class MockImageProcessor: ImageProcessor, @unchecked Sendable {
     private(set) var processCallCount = 0
+    private(set) var stampDateCallCount = 0
     private(set) var lastParameters: FilterParameters?
 
     func process(_ image: CIImage, with parameters: FilterParameters) -> CIImage {
@@ -14,6 +16,11 @@ final class MockImageProcessor: ImageProcessor, @unchecked Sendable {
 
     func makePhotoData(from image: CIImage) -> Data? {
         Data([0x01])
+    }
+
+    func stampDate(_ date: Date, on image: CIImage) -> CIImage {
+        stampDateCallCount += 1
+        return image
     }
 
     func renderCGImage(from image: CIImage) -> CGImage? {
