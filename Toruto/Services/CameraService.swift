@@ -20,6 +20,8 @@ protocol CameraService: AnyObject {
     func stop() async
     /// 前面/背面カメラを切り替える
     func switchCamera() async throws
+    /// 露出補正（EV）を設定する。デバイスの対応範囲にクランプされる
+    func setExposureBias(_ bias: Float) async throws
     /// 静止画を撮影し、画像データを返す
     func capturePhoto() async throws -> Data
 }
