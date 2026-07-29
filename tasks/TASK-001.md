@@ -1,8 +1,9 @@
 # TASK-001: Phase 1-a カメラ起動 → プレビュー → シャッター
 
-- status: in-progress
+- status: done
 - priority: high
 - started_at: 2026-07-27
+- completed_at: 2026-07-30
 
 ## Goal
 
@@ -16,7 +17,7 @@ Crop / フィルター / 保存は Phase 1-b（TASK-002 以降）。
 - [x] AVCaptureSession が起動し、MTKView + Metal バック CIContext でプレビュー表示できる
 - [x] シャッターで静止画を撮影できる（視覚 + 触覚フィードバック付き）
 - [x] CameraViewModel の単体テストがある（モック Service 注入）
-- [ ] シミュレータ向けビルドが通る（swiftc 型チェックは通過。sandbox 制約で xcodebuild 実行不可のためユーザー環境での確認待ち）
+- [x] シミュレータ向けビルドが通る（ユーザー環境で xcodebuild test 通過を確認）
 
 ## Sub Tasks
 
@@ -41,3 +42,4 @@ Crop / フィルター / 保存は Phase 1-b（TASK-002 以降）。
 | 2026-07-27 | started | プロジェクト雛形の作成から着手 |
 | 2026-07-27 | note | 実装完了。swiftc 型チェック（app/tests）通過 |
 | 2026-07-27 | blocked | xcodebuild が sandbox 制約で実行不可。ユーザー環境でのビルド・テスト実行待ち |
+| 2026-07-30 | completed | ユーザー環境でビルド・テスト通過を確認 |
