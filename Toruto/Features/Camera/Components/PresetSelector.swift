@@ -4,7 +4,9 @@ import SwiftUI
 struct PresetSelector: View {
     let presets: [CameraPreset]
     let currentPreset: CameraPreset?
+    let isFavorite: (CameraPreset) -> Bool
     let onSelect: (CameraPreset) -> Void
+    let onToggleFavorite: (CameraPreset) -> Void
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -27,20 +29,33 @@ struct PresetSelector: View {
 
     private func chip(for preset: CameraPreset) -> some View {
         let isSelected = preset.id == currentPreset?.id
-        return Button {
-            onSelect(preset)
-        } label: {
+        return HStack(spacing: 4) {
+            if isFavorite(preset) {
+                Image(systemName: "star.fill")
+                    .font(.caption2)
+                    .foregroundStyle(isSelected ? .black : .yellow)
+            }
             Text(preset.displayName)
                 .font(.subheadline.weight(isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? .black : .white)
-                .padding(.horizontal, 16)
-                .frame(minHeight: 44)
-                .background(
-                    Capsule().fill(isSelected ? .white : .white.opacity(0.12))
-                )
+        }
+        .padding(.horizontal, 16)
+        .frame(minHeight: 44)
+        .background(
+            Capsule().fill(isSelected ? .white : .white.opacity(0.12))
+        )
+        .contentShape(Capsule())
+        .onTapGesture {
+            onSelect(preset)
+        }
+        .onLongPressGesture(minimumDuration: 0.4) {
+            onToggleFavorite(preset)
         }
         .id(preset.id)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(preset.displayName)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityHint("長押しでお気に入りを切り替え")
     }
 }
 
@@ -53,7 +68,9 @@ struct PresetSelector: View {
                 CameraPreset(id: "soft", displayName: "Soft", filterParameters: FilterParameters()),
             ],
             currentPreset: nil,
-            onSelect: { _ in }
+            isFavorite: { $0.id == "ccd" },
+            onSelect: { _ in },
+            onToggleFavorite: { _ in }
         )
     }
 }

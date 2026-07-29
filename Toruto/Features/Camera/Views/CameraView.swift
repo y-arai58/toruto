@@ -33,7 +33,9 @@ struct CameraView: View {
                 PresetSelector(
                     presets: viewModel.presets,
                     currentPreset: viewModel.currentPreset,
-                    onSelect: { viewModel.selectPreset($0) }
+                    isFavorite: { viewModel.isFavorite($0) },
+                    onSelect: { viewModel.selectPreset($0) },
+                    onToggleFavorite: { viewModel.toggleFavorite($0) }
                 )
 
                 bottomBar
@@ -57,6 +59,7 @@ struct CameraView: View {
             newValue
         }
         .sensoryFeedback(.selection, trigger: viewModel.currentPreset?.id)
+        .sensoryFeedback(.impact(weight: .light), trigger: viewModel.favoritePresetIDs)
     }
 
     /// 中央フレーム（3:4 固定）。保存領域＝プレビュー領域として明示する
