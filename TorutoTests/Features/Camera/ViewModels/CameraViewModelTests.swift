@@ -8,13 +8,15 @@ struct CameraViewModelTests {
         service: MockCameraService = MockCameraService(),
         processor: MockImageProcessor = MockImageProcessor(),
         repository: MockPresetRepository = MockPresetRepository(),
-        photoLibrary: MockPhotoLibraryService = MockPhotoLibraryService()
+        photoLibrary: MockPhotoLibraryService = MockPhotoLibraryService(),
+        favoriteStore: MockFavoriteStore = MockFavoriteStore()
     ) -> CameraViewModel {
         CameraViewModel(
             cameraService: service,
             imageProcessor: processor,
             presetRepository: repository,
-            photoLibraryService: photoLibrary
+            photoLibraryService: photoLibrary,
+            favoriteStore: favoriteStore
         )
     }
 
@@ -163,6 +165,55 @@ struct CameraViewModelTests {
 
         #expect(viewModel.status == .running)
         #expect(viewModel.isSwitchingCamera == false)
+    }
+
+    @Test
+    func toggleFavorite_登録するとストアへ保存され先頭に並ぶ() {
+        let presetC = CameraPreset(id: "c", displayName: "C", filterParameters: FilterParameters())
+        let repository = MockPresetRepository(presets: [
+            CameraPreset(id: "a", displayName: "A", filterParameters: FilterParameters()),
+            CameraPreset(id: "b", displayName: "B", filterParameters: FilterParameters()),
+            presetC,
+        ])
+        let store = MockFavoriteStore()
+        let viewModel = makeViewModel(repository: repository, favoriteStore: store)
+
+        viewModel.toggleFavorite(presetC)
+
+        #expect(viewModel.isFavorite(presetC))
+        #expect(store.favoriteIDs() == ["c"])
+        #expect(viewModel.presets.map(\.id) == ["c", "a", "b"])
+    }
+
+    @Test
+    func toggleFavorite_解除すると定義順に戻る() {
+        let presetC = CameraPreset(id: "c", displayName: "C", filterParameters: FilterParameters())
+        let repository = MockPresetRepository(presets: [
+            CameraPreset(id: "a", displayName: "A", filterParameters: FilterParameters()),
+            CameraPreset(id: "b", displayName: "B", filterParameters: FilterParameters()),
+            presetC,
+        ])
+        let store = MockFavoriteStore(favorites: ["c"])
+        let viewModel = makeViewModel(repository: repository, favoriteStore: store)
+        #expect(viewModel.presets.map(\.id) == ["c", "a", "b"])
+
+        viewModel.toggleFavorite(presetC)
+
+        #expect(!viewModel.isFavorite(presetC))
+        #expect(viewModel.presets.map(\.id) == ["a", "b", "c"])
+    }
+
+    @Test
+    func init_保存済みのお気に入りを読み込み先頭のプリセットを選択する() {
+        let repository = MockPresetRepository(presets: [
+            CameraPreset(id: "a", displayName: "A", filterParameters: FilterParameters()),
+            CameraPreset(id: "b", displayName: "B", filterParameters: FilterParameters()),
+        ])
+        let store = MockFavoriteStore(favorites: ["b"])
+        let viewModel = makeViewModel(repository: repository, favoriteStore: store)
+
+        #expect(viewModel.presets.map(\.id) == ["b", "a"])
+        #expect(viewModel.currentPreset?.id == "b")
     }
 
     @Test
