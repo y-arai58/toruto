@@ -4,10 +4,44 @@ import UIKit
 
 @MainActor
 struct CameraViewModelTests {
+    private func makeViewModel(
+        service: MockCameraService = MockCameraService(),
+        processor: MockImageProcessor = MockImageProcessor(),
+        repository: MockPresetRepository = MockPresetRepository()
+    ) -> CameraViewModel {
+        CameraViewModel(
+            cameraService: service,
+            imageProcessor: processor,
+            presetRepository: repository
+        )
+    }
+
+    @Test
+    func init_プリセットを読み込み先頭を選択する() {
+        let repository = MockPresetRepository(presets: [
+            CameraPreset(id: "a", displayName: "A", filterParameters: FilterParameters()),
+            CameraPreset(id: "b", displayName: "B", filterParameters: FilterParameters()),
+        ])
+        let viewModel = makeViewModel(repository: repository)
+
+        #expect(viewModel.presets.count == 2)
+        #expect(viewModel.currentPreset?.id == "a")
+    }
+
+    @Test
+    func init_プリセット読み込み失敗でもクラッシュしない() {
+        let repository = MockPresetRepository()
+        repository.result = .failure(PresetRepositoryError.resourceNotFound)
+        let viewModel = makeViewModel(repository: repository)
+
+        #expect(viewModel.presets.isEmpty)
+        #expect(viewModel.currentPreset == nil)
+    }
+
     @Test
     func startSession_成功時はrunningになる() async {
         let service = MockCameraService()
-        let viewModel = CameraViewModel(cameraService: service)
+        let viewModel = makeViewModel(service: service)
 
         await viewModel.startSession()
 
@@ -19,7 +53,7 @@ struct CameraViewModelTests {
     func startSession_権限拒否時はpermissionDeniedになる() async {
         let service = MockCameraService()
         service.startError = CameraServiceError.permissionDenied
-        let viewModel = CameraViewModel(cameraService: service)
+        let viewModel = makeViewModel(service: service)
 
         await viewModel.startSession()
 
@@ -30,7 +64,7 @@ struct CameraViewModelTests {
     func startSession_デバイス不可時はunavailableになる() async {
         let service = MockCameraService()
         service.startError = CameraServiceError.deviceUnavailable
-        let viewModel = CameraViewModel(cameraService: service)
+        let viewModel = makeViewModel(service: service)
 
         await viewModel.startSession()
 
@@ -40,7 +74,7 @@ struct CameraViewModelTests {
     @Test
     func stopSession_実行中に停止するとidleに戻る() async {
         let service = MockCameraService()
-        let viewModel = CameraViewModel(cameraService: service)
+        let viewModel = makeViewModel(service: service)
         await viewModel.startSession()
 
         await viewModel.stopSession()
@@ -50,23 +84,25 @@ struct CameraViewModelTests {
     }
 
     @Test
-    func capturePhoto_成功時は画像を保持する() async {
+    func capturePhoto_成功時はCropとフィルターを適用した画像を保持する() async {
         let service = MockCameraService()
         service.captureResult = .success(Self.makeImageData())
-        let viewModel = CameraViewModel(cameraService: service)
+        let processor = MockImageProcessor()
+        let viewModel = makeViewModel(service: service, processor: processor)
         await viewModel.startSession()
 
         await viewModel.capturePhoto()
 
         #expect(viewModel.lastCapturedImage != nil)
         #expect(service.captureCallCount == 1)
+        #expect(processor.processCallCount == 1)
         #expect(viewModel.isCapturing == false)
     }
 
     @Test
     func capturePhoto_起動前は撮影しない() async {
         let service = MockCameraService()
-        let viewModel = CameraViewModel(cameraService: service)
+        let viewModel = makeViewModel(service: service)
 
         await viewModel.capturePhoto()
 
@@ -78,7 +114,7 @@ struct CameraViewModelTests {
     func capturePhoto_失敗時は画像を保持しない() async {
         let service = MockCameraService()
         service.captureResult = .failure(CameraServiceError.captureFailed)
-        let viewModel = CameraViewModel(cameraService: service)
+        let viewModel = makeViewModel(service: service)
         await viewModel.startSession()
 
         await viewModel.capturePhoto()
@@ -88,10 +124,10 @@ struct CameraViewModelTests {
     }
 
     private static func makeImageData() -> Data {
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1, height: 1))
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4))
         return renderer.pngData { context in
             UIColor.black.setFill()
-            context.fill(CGRect(x: 0, y: 0, width: 1, height: 1))
+            context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
         }
     }
 }
