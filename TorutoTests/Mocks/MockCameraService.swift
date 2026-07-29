@@ -7,6 +7,7 @@ final class MockCameraService: CameraService {
     var startError: Error?
     var switchCameraError: Error?
     private(set) var lastExposureBias: Float?
+    private(set) var lastFlashEnabled: Bool?
     var captureResult: Result<Data, Error> = .failure(CameraServiceError.captureFailed)
 
     private(set) var startCallCount = 0
@@ -49,6 +50,10 @@ final class MockCameraService: CameraService {
 
     func setExposureBias(_ bias: Float) async throws {
         lastExposureBias = bias
+    }
+
+    func setFlashEnabled(_ isEnabled: Bool) async {
+        lastFlashEnabled = isEnabled
     }
 
     func capturePhoto() async throws -> Data {
