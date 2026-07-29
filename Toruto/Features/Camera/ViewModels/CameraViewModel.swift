@@ -24,6 +24,7 @@ final class CameraViewModel {
     private(set) var isSwitchingCamera = false
     private(set) var exposureBias: Double = 0
     private(set) var isFlashEnabled = false
+    private(set) var isDateStampEnabled = false
     private(set) var lastCapturedImage: UIImage?
     /// 表示順のプリセット一覧（お気に入りが先頭、それ以外は定義順）
     private(set) var presets: [CameraPreset] = []
@@ -36,6 +37,7 @@ final class CameraViewModel {
     private let presetRepository: any PresetRepository
     private let photoLibraryService: any PhotoLibraryService
     private let favoriteStore: any FavoriteStore
+    private let settingsStore: any SettingsStore
     /// presets.json の定義順
     private var orderedPresets: [CameraPreset] = []
     /// プレビュー処理タスク（非 MainActor）と共有するフィルターパラメータ
@@ -46,13 +48,16 @@ final class CameraViewModel {
         imageProcessor: (any ImageProcessor)? = nil,
         presetRepository: (any PresetRepository)? = nil,
         photoLibraryService: (any PhotoLibraryService)? = nil,
-        favoriteStore: (any FavoriteStore)? = nil
+        favoriteStore: (any FavoriteStore)? = nil,
+        settingsStore: (any SettingsStore)? = nil
     ) {
         self.cameraService = cameraService ?? DefaultCameraService()
         self.imageProcessor = imageProcessor ?? DefaultImageProcessor()
         self.presetRepository = presetRepository ?? BundlePresetRepository()
         self.photoLibraryService = photoLibraryService ?? DefaultPhotoLibraryService()
         self.favoriteStore = favoriteStore ?? UserDefaultsFavoriteStore()
+        self.settingsStore = settingsStore ?? UserDefaultsSettingsStore()
+        isDateStampEnabled = self.settingsStore.isDateStampEnabled
         loadPresets()
     }
 
@@ -100,6 +105,11 @@ final class CameraViewModel {
     func toggleFlash() async {
         isFlashEnabled.toggle()
         await cameraService.setFlashEnabled(isFlashEnabled)
+    }
+
+    func toggleDateStamp() {
+        isDateStampEnabled.toggle()
+        settingsStore.isDateStampEnabled = isDateStampEnabled
     }
 
     /// 露出補正（EV）。UI からは -2〜+2 の範囲で渡す
@@ -174,7 +184,10 @@ final class CameraViewModel {
             return nil
         }
         let parameters = currentPreset?.filterParameters ?? FilterParameters()
-        let processed = imageProcessor.process(source, with: parameters)
+        var processed = imageProcessor.process(source, with: parameters)
+        if isDateStampEnabled {
+            processed = imageProcessor.stampDate(Date(), on: processed)
+        }
         guard let cgImage = imageProcessor.renderCGImage(from: processed),
               let photoData = imageProcessor.makePhotoData(from: processed) else {
             return nil

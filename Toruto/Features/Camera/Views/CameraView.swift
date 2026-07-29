@@ -134,6 +134,16 @@ struct CameraView: View {
                 .accessibilityLabel(viewModel.isFlashEnabled ? "フラッシュをオフ" : "フラッシュをオン")
 
                 Spacer()
+
+                Button {
+                    viewModel.toggleDateStamp()
+                } label: {
+                    Image(systemName: viewModel.isDateStampEnabled ? "calendar.badge.checkmark" : "calendar")
+                        .font(.subheadline)
+                        .foregroundStyle(viewModel.isDateStampEnabled ? .orange : .white.opacity(0.7))
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel(viewModel.isDateStampEnabled ? "日付スタンプをオフ" : "日付スタンプをオン")
             }
         }
         .padding(.horizontal, 24)
