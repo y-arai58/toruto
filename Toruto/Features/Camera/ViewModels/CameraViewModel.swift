@@ -19,6 +19,7 @@ final class CameraViewModel {
 
     private(set) var status: Status = .idle
     private(set) var isCapturing = false
+    private(set) var isSwitchingCamera = false
     private(set) var lastCapturedImage: UIImage?
     private(set) var presets: [CameraPreset] = []
     private(set) var currentPreset: CameraPreset?
@@ -64,6 +65,14 @@ final class CameraViewModel {
     func selectPreset(_ preset: CameraPreset) {
         currentPreset = preset
         previewParameters.value = preset.filterParameters
+    }
+
+    func switchCamera() async {
+        guard status == .running, !isSwitchingCamera else { return }
+        isSwitchingCamera = true
+        defer { isSwitchingCamera = false }
+        // 失敗時は現在のカメラのまま継続する
+        try? await cameraService.switchCamera()
     }
 
     func startSession() async {
