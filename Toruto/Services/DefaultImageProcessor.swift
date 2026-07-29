@@ -23,6 +23,22 @@ final class DefaultImageProcessor: ImageProcessor, @unchecked Sendable {
         ciContext.createCGImage(image, from: image.extent)
     }
 
+    func makePhotoData(from image: CIImage) -> Data? {
+        let colorSpace = image.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB)
+        guard let colorSpace else { return nil }
+
+        let quality = [kCGImageDestinationLossyCompressionQuality as CIImageRepresentationOption: 0.9]
+        if let heic = ciContext.heifRepresentation(
+            of: image,
+            format: .RGBA8,
+            colorSpace: colorSpace,
+            options: quality
+        ) {
+            return heic
+        }
+        return ciContext.jpegRepresentation(of: image, colorSpace: colorSpace, options: quality)
+    }
+
     /// 中央 3:4 で切り出し、原点を (0, 0) に揃える
     private func cropToCenterFrame(_ image: CIImage) -> CIImage {
         let rect = CropCalculator.centeredCropRect(in: image.extent, aspectRatio: Self.frameAspectRatio)
