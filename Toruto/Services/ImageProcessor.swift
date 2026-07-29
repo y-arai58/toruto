@@ -6,4 +6,6 @@ protocol ImageProcessor: AnyObject, Sendable {
     func process(_ image: CIImage, with parameters: FilterParameters) -> CIImage
     /// 保存・表示用に CGImage へ変換する
     func renderCGImage(from image: CIImage) -> CGImage?
+    /// 保存用の画像データを生成する（HEIC、非対応環境は JPEG フォールバック）
+    func makePhotoData(from image: CIImage) -> Data?
 }

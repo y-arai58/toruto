@@ -22,6 +22,8 @@ struct CameraView: View {
 
                 previewFrame
 
+                saveErrorBanner
+
                 bottomBar
             }
             .padding(.vertical, 16)
@@ -85,6 +87,33 @@ struct CameraView: View {
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.8))
         case .idle, .running:
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
+    private var saveErrorBanner: some View {
+        switch viewModel.saveError {
+        case .permissionDenied:
+            HStack(spacing: 8) {
+                Text("保存には写真へのアクセス許可が必要です")
+                    .font(.caption)
+                    .foregroundStyle(.white)
+                Button("設定") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        openURL(url)
+                    }
+                }
+                .font(.caption.bold())
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(.white.opacity(0.15), in: Capsule())
+        case .failed:
+            Text("保存に失敗しました")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.8))
+        case nil:
             EmptyView()
         }
     }

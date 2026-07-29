@@ -12,6 +12,10 @@ final class MockImageProcessor: ImageProcessor, @unchecked Sendable {
         return image
     }
 
+    func makePhotoData(from image: CIImage) -> Data? {
+        Data([0x01])
+    }
+
     func renderCGImage(from image: CIImage) -> CGImage? {
         let context = CGContext(
             data: nil,

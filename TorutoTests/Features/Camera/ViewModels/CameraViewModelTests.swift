@@ -7,12 +7,14 @@ struct CameraViewModelTests {
     private func makeViewModel(
         service: MockCameraService = MockCameraService(),
         processor: MockImageProcessor = MockImageProcessor(),
-        repository: MockPresetRepository = MockPresetRepository()
+        repository: MockPresetRepository = MockPresetRepository(),
+        photoLibrary: MockPhotoLibraryService = MockPhotoLibraryService()
     ) -> CameraViewModel {
         CameraViewModel(
             cameraService: service,
             imageProcessor: processor,
-            presetRepository: repository
+            presetRepository: repository,
+            photoLibraryService: photoLibrary
         )
     }
 
@@ -97,6 +99,51 @@ struct CameraViewModelTests {
         #expect(service.captureCallCount == 1)
         #expect(processor.processCallCount == 1)
         #expect(viewModel.isCapturing == false)
+    }
+
+    @Test
+    func capturePhoto_成功時は加工済みデータを保存する() async {
+        let service = MockCameraService()
+        service.captureResult = .success(Self.makeImageData())
+        let photoLibrary = MockPhotoLibraryService()
+        let viewModel = makeViewModel(service: service, photoLibrary: photoLibrary)
+        await viewModel.startSession()
+
+        await viewModel.capturePhoto()
+
+        #expect(photoLibrary.savedData.count == 1)
+        #expect(viewModel.saveError == nil)
+    }
+
+    @Test
+    func capturePhoto_保存権限拒否時はpermissionDeniedを通知する() async {
+        let service = MockCameraService()
+        service.captureResult = .success(Self.makeImageData())
+        let photoLibrary = MockPhotoLibraryService()
+        photoLibrary.saveError = PhotoLibraryError.permissionDenied
+        let viewModel = makeViewModel(service: service, photoLibrary: photoLibrary)
+        await viewModel.startSession()
+
+        await viewModel.capturePhoto()
+
+        #expect(viewModel.saveError == .permissionDenied)
+    }
+
+    @Test
+    func capturePhoto_保存失敗時はfailedを通知し次の撮影でリセットされる() async {
+        let service = MockCameraService()
+        service.captureResult = .success(Self.makeImageData())
+        let photoLibrary = MockPhotoLibraryService()
+        photoLibrary.saveError = PhotoLibraryError.saveFailed
+        let viewModel = makeViewModel(service: service, photoLibrary: photoLibrary)
+        await viewModel.startSession()
+
+        await viewModel.capturePhoto()
+        #expect(viewModel.saveError == .failed)
+
+        photoLibrary.saveError = nil
+        await viewModel.capturePhoto()
+        #expect(viewModel.saveError == nil)
     }
 
     @Test

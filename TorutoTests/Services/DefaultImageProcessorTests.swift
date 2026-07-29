@@ -35,6 +35,15 @@ struct DefaultImageProcessorTests {
     }
 
     @Test
+    func makePhotoDataで保存用データを生成できる() throws {
+        let output = processor.process(makeImage(width: 300, height: 400), with: FilterParameters())
+        let data = try #require(processor.makePhotoData(from: output))
+        #expect(!data.isEmpty)
+        // HEIC 非対応環境でも JPEG フォールバックで CIImage として読み戻せる
+        #expect(CIImage(data: data) != nil)
+    }
+
+    @Test
     func renderCGImageで実画像に変換できる() throws {
         let output = processor.process(makeImage(width: 300, height: 400), with: FilterParameters())
         let cgImage = try #require(processor.renderCGImage(from: output))
