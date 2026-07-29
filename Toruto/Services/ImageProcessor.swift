@@ -8,4 +8,6 @@ protocol ImageProcessor: AnyObject, Sendable {
     func renderCGImage(from image: CIImage) -> CGImage?
     /// 保存用の画像データを生成する（HEIC、非対応環境は JPEG フォールバック）
     func makePhotoData(from image: CIImage) -> Data?
+    /// フィルムカメラ風の日付スタンプを右下に焼き込む
+    func stampDate(_ date: Date, on image: CIImage) -> CIImage
 }
