@@ -1,0 +1,75 @@
+[
+  {
+    "id": "ccd",
+    "displayName": "CCD",
+    "filterParameters": {
+      "saturation": 1.25,
+      "contrast": 1.05,
+      "temperature": 6200,
+      "tint": -4,
+      "bloomIntensity": 0.3,
+      "bloomRadius": 6
+    }
+  },
+  {
+    "id": "digital_compact",
+    "displayName": "Digital Compact",
+    "filterParameters": {
+      "contrast": 1.08,
+      "saturation": 1.05,
+      "vignetteIntensity": 0.4,
+      "vignetteRadius": 1.4
+    }
+  },
+  {
+    "id": "disposable",
+    "displayName": "Disposable",
+    "filterParameters": {
+      "saturation": 0.95,
+      "contrast": 1.1,
+      "temperature": 5600,
+      "tint": 6,
+      "grainIntensity": 0.7,
+      "vignetteIntensity": 1.0,
+      "vignetteRadius": 1.8
+    }
+  },
+  {
+    "id": "flash",
+    "displayName": "Flash",
+    "filterParameters": {
+      "brightness": 0.05,
+      "contrast": 1.25,
+      "saturation": 1.1,
+      "bloomIntensity": 0.8,
+      "bloomRadius": 12,
+      "vignetteIntensity": 0.5,
+      "vignetteRadius": 1.6
+    }
+  },
+  {
+    "id": "soft",
+    "displayName": "Soft",
+    "filterParameters": {
+      "contrast": 0.9,
+      "saturation": 0.85,
+      "brightness": 0.03,
+      "blurRadius": 1.5,
+      "bloomIntensity": 0.4,
+      "bloomRadius": 10
+    }
+  },
+  {
+    "id": "vintage",
+    "displayName": "Vintage",
+    "filterParameters": {
+      "saturation": 0.8,
+      "contrast": 0.95,
+      "temperature": 7200,
+      "tint": 4,
+      "grainIntensity": 0.5,
+      "vignetteIntensity": 0.7,
+      "vignetteRadius": 1.7
+    }
+  }
+]
