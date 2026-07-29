@@ -12,9 +12,9 @@
 
 ## Phase2
 
-- [ ] Crop
+- [x] Crop
 
-- [ ] Filter
+- [x] Filter
 
 - [ ] Save
 

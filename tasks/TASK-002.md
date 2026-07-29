@@ -1,8 +1,9 @@
 # TASK-002: ImageProcessor（中央フレーム Crop + フィルター適用）
 
-- status: in-progress
+- status: done
 - priority: high
 - started_at: 2026-07-30
+- completed_at: 2026-07-30
 
 ## Goal
 
@@ -17,7 +18,7 @@ Phase 1-b 前半。プレビューと撮影画像に「中央フレーム 3:4 Cr
 - [x] プレビューにフィルター適用済みフレームがリアルタイム表示される
 - [x] 撮影画像にも同じ Crop + フィルターが適用される
 - [x] Crop 計算・パラメータデコード・フィルターチェーンの単体テストがある
-- [ ] swiftc 型チェック通過 + ユーザー環境でテスト通過（型チェックは通過済み。テスト実行待ち）
+- [x] swiftc 型チェック通過 + ユーザー環境でテスト通過
 
 ## Sub Tasks
 
@@ -40,3 +41,4 @@ Phase 1-b 前半。プレビューと撮影画像に「中央フレーム 3:4 Cr
 |---|---|---|
 | 2026-07-30 | created | Phase 1-b 前半として開始 |
 | 2026-07-30 | started | Models / ImageProcessor から着手 |
+| 2026-07-30 | completed | ユーザー環境でテスト21件通過を確認 |
