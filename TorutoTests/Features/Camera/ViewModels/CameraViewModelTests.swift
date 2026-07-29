@@ -131,6 +131,41 @@ struct CameraViewModelTests {
     }
 
     @Test
+    func switchCamera_実行中はサービスを呼ぶ() async {
+        let service = MockCameraService()
+        let viewModel = makeViewModel(service: service)
+        await viewModel.startSession()
+
+        await viewModel.switchCamera()
+
+        #expect(service.switchCameraCallCount == 1)
+        #expect(viewModel.isSwitchingCamera == false)
+    }
+
+    @Test
+    func switchCamera_起動前は呼ばない() async {
+        let service = MockCameraService()
+        let viewModel = makeViewModel(service: service)
+
+        await viewModel.switchCamera()
+
+        #expect(service.switchCameraCallCount == 0)
+    }
+
+    @Test
+    func switchCamera_失敗してもrunningのまま継続する() async {
+        let service = MockCameraService()
+        service.switchCameraError = CameraServiceError.deviceUnavailable
+        let viewModel = makeViewModel(service: service)
+        await viewModel.startSession()
+
+        await viewModel.switchCamera()
+
+        #expect(viewModel.status == .running)
+        #expect(viewModel.isSwitchingCamera == false)
+    }
+
+    @Test
     func capturePhoto_成功時はCropとフィルターを適用した画像を保持する() async {
         let service = MockCameraService()
         service.captureResult = .success(Self.makeImageData())
