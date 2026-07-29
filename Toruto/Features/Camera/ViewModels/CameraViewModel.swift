@@ -23,6 +23,7 @@ final class CameraViewModel {
     private(set) var isCapturing = false
     private(set) var isSwitchingCamera = false
     private(set) var exposureBias: Double = 0
+    private(set) var isFlashEnabled = false
     private(set) var lastCapturedImage: UIImage?
     /// 表示順のプリセット一覧（お気に入りが先頭、それ以外は定義順）
     private(set) var presets: [CameraPreset] = []
@@ -94,6 +95,11 @@ final class CameraViewModel {
         defer { isSwitchingCamera = false }
         // 失敗時は現在のカメラのまま継続する
         try? await cameraService.switchCamera()
+    }
+
+    func toggleFlash() async {
+        isFlashEnabled.toggle()
+        await cameraService.setFlashEnabled(isFlashEnabled)
     }
 
     /// 露出補正（EV）。UI からは -2〜+2 の範囲で渡す
