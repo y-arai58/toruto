@@ -28,6 +28,8 @@ final class CameraViewModel {
     private let imageProcessor: any ImageProcessor
     private let presetRepository: any PresetRepository
     private let photoLibraryService: any PhotoLibraryService
+    /// プレビュー処理タスク（非 MainActor）と共有するフィルターパラメータ
+    private let previewParameters = LockedValue(FilterParameters())
 
     init(
         cameraService: (any CameraService)? = nil,
@@ -43,20 +45,25 @@ final class CameraViewModel {
     }
 
     /// Crop + フィルター適用済みのプレビューフレームを供給する。
-    /// パラメータはストリーム生成時に固定される（プリセット切替は TASK-004 で再購読対応）
+    /// パラメータはフレームごとに読み直すため、プリセット切替に即時追従する
     func makePreviewStream() -> AsyncStream<CIImage> {
         let source = cameraService.makePreviewStream()
         let processor = imageProcessor
-        let parameters = currentPreset?.filterParameters ?? FilterParameters()
+        let parameters = previewParameters
         return AsyncStream { continuation in
             let task = Task.detached {
                 for await frame in source {
-                    continuation.yield(processor.process(frame, with: parameters))
+                    continuation.yield(processor.process(frame, with: parameters.value))
                 }
                 continuation.finish()
             }
             continuation.onTermination = { _ in task.cancel() }
         }
+    }
+
+    func selectPreset(_ preset: CameraPreset) {
+        currentPreset = preset
+        previewParameters.value = preset.filterParameters
     }
 
     func startSession() async {
@@ -101,7 +108,9 @@ final class CameraViewModel {
 
     private func loadPresets() {
         presets = (try? presetRepository.loadPresets()) ?? []
-        currentPreset = presets.first
+        if let first = presets.first {
+            selectPreset(first)
+        }
     }
 
     /// 撮影データにプレビューと同じ Crop + フィルターを適用し、

@@ -15,14 +15,20 @@ struct CameraView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            VStack(spacing: 24) {
-                Text("Toruto")
+            VStack(spacing: 16) {
+                Text(viewModel.currentPreset?.displayName ?? "Toruto")
                     .font(.headline)
                     .foregroundStyle(.white)
 
                 previewFrame
 
                 saveErrorBanner
+
+                PresetSelector(
+                    presets: viewModel.presets,
+                    currentPreset: viewModel.currentPreset,
+                    onSelect: { viewModel.selectPreset($0) }
+                )
 
                 bottomBar
             }
@@ -44,6 +50,7 @@ struct CameraView: View {
         .sensoryFeedback(.impact(weight: .medium), trigger: isFlashing) { _, newValue in
             newValue
         }
+        .sensoryFeedback(.selection, trigger: viewModel.currentPreset?.id)
     }
 
     /// 中央フレーム（3:4 固定）。保存領域＝プレビュー領域として明示する

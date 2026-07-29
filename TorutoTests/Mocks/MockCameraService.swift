@@ -11,8 +11,15 @@ final class MockCameraService: CameraService {
     private(set) var stopCallCount = 0
     private(set) var captureCallCount = 0
 
+    private var previewContinuation: AsyncStream<CIImage>.Continuation?
+
     func makePreviewStream() -> AsyncStream<CIImage> {
-        AsyncStream { $0.finish() }
+        AsyncStream { previewContinuation = $0 }
+    }
+
+    /// テストからプレビューフレームを流し込む
+    func emitPreviewFrame(_ image: CIImage) {
+        previewContinuation?.yield(image)
     }
 
     func requestAuthorization() async -> Bool {

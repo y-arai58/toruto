@@ -41,6 +41,51 @@ struct CameraViewModelTests {
     }
 
     @Test
+    func selectPreset_currentPresetが切り替わる() {
+        let presetB = CameraPreset(id: "b", displayName: "B", filterParameters: FilterParameters())
+        let repository = MockPresetRepository(presets: [
+            CameraPreset(id: "a", displayName: "A", filterParameters: FilterParameters()),
+            presetB,
+        ])
+        let viewModel = makeViewModel(repository: repository)
+
+        viewModel.selectPreset(presetB)
+
+        #expect(viewModel.currentPreset?.id == "b")
+    }
+
+    @Test
+    func selectPreset_プレビューのパラメータに即時反映される() async {
+        var parametersA = FilterParameters()
+        parametersA.saturation = 2
+        var parametersB = FilterParameters()
+        parametersB.saturation = 3
+        let presetA = CameraPreset(id: "a", displayName: "A", filterParameters: parametersA)
+        let presetB = CameraPreset(id: "b", displayName: "B", filterParameters: parametersB)
+
+        let service = MockCameraService()
+        let processor = MockImageProcessor()
+        let viewModel = makeViewModel(
+            service: service,
+            processor: processor,
+            repository: MockPresetRepository(presets: [presetA, presetB])
+        )
+
+        let stream = viewModel.makePreviewStream()
+        var iterator = stream.makeAsyncIterator()
+        let frame = CIImage(color: .gray).cropped(to: CGRect(x: 0, y: 0, width: 3, height: 4))
+
+        service.emitPreviewFrame(frame)
+        _ = await iterator.next()
+        #expect(processor.lastParameters == parametersA)
+
+        viewModel.selectPreset(presetB)
+        service.emitPreviewFrame(frame)
+        _ = await iterator.next()
+        #expect(processor.lastParameters == parametersB)
+    }
+
+    @Test
     func startSession_成功時はrunningになる() async {
         let service = MockCameraService()
         let viewModel = makeViewModel(service: service)
