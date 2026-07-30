@@ -10,7 +10,7 @@
 
 ```text
 プレビュー: 入力フレーム → CIImage → CIFilter チェーン → 全画角表示（フレーム外は UI で暗く）
-保存:      撮影データ → CIImage → 中央フレーム Crop（3:4・視野の80%） → CIFilter チェーン → HEIC
+保存:      撮影データ → CIImage → 中央フレーム Crop（3:4・ピンチで可変） → CIFilter チェーン → HEIC
 ```
 
 ## フィルター構成要素（例）

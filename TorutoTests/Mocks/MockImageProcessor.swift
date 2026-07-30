@@ -8,9 +8,12 @@ final class MockImageProcessor: ImageProcessor, @unchecked Sendable {
     private(set) var stampDateCallCount = 0
     private(set) var lastParameters: FilterParameters?
 
-    func process(_ image: CIImage, with parameters: FilterParameters) -> CIImage {
+    private(set) var lastFrameScale: CGFloat?
+
+    func process(_ image: CIImage, with parameters: FilterParameters, frameScale: CGFloat) -> CIImage {
         processCallCount += 1
         lastParameters = parameters
+        lastFrameScale = frameScale
         return image
     }
 
