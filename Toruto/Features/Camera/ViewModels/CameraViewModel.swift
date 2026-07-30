@@ -20,6 +20,8 @@ final class CameraViewModel {
     static let exposureRange: ClosedRange<Double> = -2...2
 
     private(set) var status: Status = .idle
+    /// プレビューの最初のフレームが届いたか（起動オーバーレイの退場条件）
+    private(set) var hasPreviewFrame = false
     private(set) var isCapturing = false
     private(set) var isSwitchingCamera = false
     private(set) var exposureBias: Double = 0
@@ -98,14 +100,24 @@ final class CameraViewModel {
         let processor = imageProcessor
         let parameters = previewParameters
         return AsyncStream { continuation in
-            let task = Task.detached {
+            let task = Task.detached { [weak self] in
+                var isFirstFrame = true
                 for await frame in source {
                     continuation.yield(processor.applyFilters(to: frame, with: parameters.value))
+                    // 通知は最初の 1 回だけ。毎フレーム MainActor へ跳ぶのを避ける
+                    if isFirstFrame {
+                        isFirstFrame = false
+                        await self?.markPreviewFrameReceived()
+                    }
                 }
                 continuation.finish()
             }
             continuation.onTermination = { _ in task.cancel() }
         }
+    }
+
+    private func markPreviewFrameReceived() {
+        hasPreviewFrame = true
     }
 
     func selectPreset(_ preset: CameraPreset) {

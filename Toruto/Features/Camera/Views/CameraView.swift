@@ -7,6 +7,7 @@ struct CameraView: View {
     @State private var exposureValue = 0.0
     @State private var isHistoryPresented = false
     @State private var pinchBaseScale: CGFloat?
+    @State private var isLaunching = true
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
 
@@ -50,6 +51,12 @@ struct CameraView: View {
                 .opacity(isFlashing && viewModel.isFlashEnabled ? 1 : 0)
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
+
+            if isLaunching {
+                LaunchOverlay(isReady: isPreviewPresentable) {
+                    isLaunching = false
+                }
+            }
         }
         .task {
             await viewModel.startSession()
@@ -91,6 +98,13 @@ struct CameraView: View {
                 )
             }
         }
+    }
+
+    /// 起動オーバーレイを外してよい状態。映像が出たか、出ないことが確定したとき
+    private var isPreviewPresentable: Bool {
+        viewModel.hasPreviewFrame
+            || viewModel.status == .permissionDenied
+            || viewModel.status == .unavailable
     }
 
     /// 全画角プレビュー（3:4）。中央フレーム（保存される領域）の外側を暗く表示する
