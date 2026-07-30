@@ -153,8 +153,8 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         }
     }
 
-    func capturePhoto() async throws -> Data {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
+    func capturePhoto() async throws -> CapturedPhoto {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CapturedPhoto, Error>) in
             sessionQueue.async {
                 guard self.session.isRunning else {
                     continuation.resume(throwing: CameraServiceError.captureFailed)
@@ -166,10 +166,14 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
                 }
                 // 向きは接続のプロパティから計算しない。
                 // それらは実際にバッファへ起きたことと一致しないため、
-                // 写真は AVFoundation が書いた EXIF をそのまま使う（読み出し側で適用する）
+                // 写真は AVFoundation が書いた EXIF をそのまま使う（読み出し側で適用する）。
+                // 撮影中にカメラを切り替えられても、この撮影の位置は確定させておく
+                let isFromFrontCamera = (self.position == .front)
                 let uniqueID = settings.uniqueID
                 let delegate = PhotoCaptureDelegate { [weak self] result in
-                    continuation.resume(with: result)
+                    continuation.resume(with: result.map {
+                        CapturedPhoto(data: $0, isFromFrontCamera: isFromFrontCamera)
+                    })
                     self?.sessionQueue.async {
                         self?.inFlightCaptures[uniqueID] = nil
                     }

@@ -596,10 +596,27 @@ struct CameraViewModelTests {
     }
 
     @Test
-    func capturePhoto_撮影データの大きさがそのまま処理に渡る() async {
+    func capturePhoto_背面は撮影データの大きさがそのまま処理に渡る() async {
         // 向きは EXIF 任せなので、EXIF を持たないデータは縦横がそのまま渡る
         let service = MockCameraService()
         service.captureResult = .success(Self.makeImageData(width: 6, height: 4))
+        let processor = MockImageProcessor()
+        let viewModel = makeViewModel(service: service, processor: processor)
+        await viewModel.startSession()
+
+        await viewModel.capturePhoto()
+
+        #expect(processor.lastProcessExtent?.width == 6)
+        #expect(processor.lastProcessExtent?.height == 4)
+        #expect(viewModel.lastPhotoSize == CGSize(width: 6, height: 4))
+    }
+
+    @Test
+    func capturePhoto_前面は左右反転しても大きさは変わらない() async {
+        // 左右反転は縦横を入れ替えないので、大きさはそのまま
+        let service = MockCameraService()
+        service.captureResult = .success(Self.makeImageData(width: 6, height: 4))
+        service.captureIsFromFrontCamera = true
         let processor = MockImageProcessor()
         let viewModel = makeViewModel(service: service, processor: processor)
         await viewModel.startSession()
