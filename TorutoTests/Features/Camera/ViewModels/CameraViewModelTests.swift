@@ -217,6 +217,20 @@ struct CameraViewModelTests {
     }
 
     @Test
+    func toggleFlash_ONOFFがサービスへ伝わる() async {
+        let service = MockCameraService()
+        let viewModel = makeViewModel(service: service)
+
+        await viewModel.toggleFlash()
+        #expect(viewModel.isFlashEnabled)
+        #expect(service.lastFlashEnabled == true)
+
+        await viewModel.toggleFlash()
+        #expect(!viewModel.isFlashEnabled)
+        #expect(service.lastFlashEnabled == false)
+    }
+
+    @Test
     func adjustExposure_範囲内の値をサービスへ渡す() async {
         let service = MockCameraService()
         let viewModel = makeViewModel(service: service)

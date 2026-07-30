@@ -18,9 +18,7 @@ struct CameraView: View {
             Color.black.ignoresSafeArea()
 
             VStack(spacing: 16) {
-                Text(viewModel.currentPreset?.displayName ?? "Toruto")
-                    .font(.headline)
-                    .foregroundStyle(.white)
+                topBar
 
                 previewFrame
 
@@ -41,6 +39,12 @@ struct CameraView: View {
                 bottomBar
             }
             .padding(.vertical, 16)
+
+            // フラッシュ ON のときは画面全体を光らせる（前面撮影の照明代わり）
+            Color.white
+                .opacity(isFlashing && viewModel.isFlashEnabled ? 1 : 0)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
         }
         .task {
             await viewModel.startSession()
@@ -109,6 +113,30 @@ struct CameraView: View {
         case .idle, .running:
             EmptyView()
         }
+    }
+
+    /// プリセット名を中央固定にするため ZStack で重ねる
+    private var topBar: some View {
+        ZStack {
+            Text(viewModel.currentPreset?.displayName ?? "Toruto")
+                .font(.headline)
+                .foregroundStyle(.white)
+
+            HStack {
+                Button {
+                    Task { await viewModel.toggleFlash() }
+                } label: {
+                    Image(systemName: viewModel.isFlashEnabled ? "bolt.fill" : "bolt.slash")
+                        .font(.subheadline)
+                        .foregroundStyle(viewModel.isFlashEnabled ? .yellow : .white.opacity(0.7))
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel(viewModel.isFlashEnabled ? "フラッシュをオフ" : "フラッシュをオン")
+
+                Spacer()
+            }
+        }
+        .padding(.horizontal, 24)
     }
 
     private var exposureSlider: some View {

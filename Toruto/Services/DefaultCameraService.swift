@@ -14,6 +14,7 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
     private var position: AVCaptureDevice.Position = .back
     private var currentInput: AVCaptureDeviceInput?
     private var exposureBias: Float = 0
+    private var isFlashEnabled = false
 
     private let continuationsLock = NSLock()
     private var frameContinuations: [UUID: AsyncStream<CIImage>.Continuation] = [:]
@@ -104,6 +105,15 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         }
     }
 
+    func setFlashEnabled(_ isEnabled: Bool) async {
+        await withCheckedContinuation { continuation in
+            sessionQueue.async {
+                self.isFlashEnabled = isEnabled
+                continuation.resume()
+            }
+        }
+    }
+
     func capturePhoto() async throws -> Data {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
             sessionQueue.async {
@@ -112,6 +122,9 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
                     return
                 }
                 let settings = AVCapturePhotoSettings()
+                if self.isFlashEnabled, self.photoOutput.supportedFlashModes.contains(.on) {
+                    settings.flashMode = .on
+                }
                 let uniqueID = settings.uniqueID
                 let delegate = PhotoCaptureDelegate { [weak self] result in
                     continuation.resume(with: result)

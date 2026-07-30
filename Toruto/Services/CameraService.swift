@@ -22,6 +22,8 @@ protocol CameraService: AnyObject {
     func switchCamera() async throws
     /// 露出補正（EV）を設定する。デバイスの対応範囲にクランプされる
     func setExposureBias(_ bias: Float) async throws
+    /// フラッシュの ON/OFF を設定する（非対応デバイスでは撮影時に無視される）
+    func setFlashEnabled(_ isEnabled: Bool) async
     /// 静止画を撮影し、画像データを返す
     func capturePhoto() async throws -> Data
 }
