@@ -1,5 +1,15 @@
 # Lessons
 
+## 2026-07-30: AVCaptureSession の入力付け替え後の接続設定は commit 後に行う
+
+- `beginConfiguration` 中に入力を付け替えた場合、新しい入力と出力の接続
+  （AVCaptureConnection）は `commitConfiguration` で確定する
+- そのため `videoRotationAngle` / `isVideoMirrored` などの接続設定を commit 前に
+  行うと新接続に適用されず、前面カメラのプレビューが横向きになる不具合になった
+- 接続への設定は必ず `commitConfiguration` の後に行う（TASK-019 で修正）
+- 初回構成は「出力追加時に既存入力との接続が即座に作られる」ため顕在化しない。
+  切替系の動作は必ず実機で確認する
+
 ## 2026-07-27: @Observable な ViewModel は View の init のデフォルト引数で生成できない
 
 - `@MainActor @Observable` な ViewModel を `init(viewModel: CameraViewModel = CameraViewModel())`
