@@ -1,8 +1,9 @@
 # TASK-011: ランダムカメラ
 
-- status: in-progress
+- status: done
 - priority: low
 - started_at: 2026-07-30
+- completed_at: 2026-07-30
 
 ## Goal
 
@@ -15,7 +16,7 @@ Phase 3 開始。ダイスボタンでプリセットをランダムに選び、
 - [x] 必ず現在と異なるプリセットが選ばれる（1 つしかない場合を除く）
 - [x] 切り替え時の Haptics・プレビュー即時反映は既存挙動と同じ
 - [x] ViewModel の単体テストがある
-- [ ] swiftc 型チェック通過 + ユーザー環境でテスト通過
+- [x] swiftc 型チェック通過 + ユーザー環境でテスト通過
 
 ## Sub Tasks
 
@@ -28,3 +29,4 @@ Phase 3 開始。ダイスボタンでプリセットをランダムに選び、
 | Date | Action | Note |
 |---|---|---|
 | 2026-07-30 | created | Phase 3 開始 |
+| 2026-07-30 | completed | ユーザー環境でテスト通過・PR マージ済み |
