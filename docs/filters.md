@@ -9,11 +9,8 @@
 ## パイプライン
 
 ```text
-入力フレーム (CVPixelBuffer)
-  → CIImage
-  → 中央フレーム Crop
-  → CIFilter チェーン（プリセットごとに定義）
-  → 出力（プレビュー表示 / 保存用 CGImage）
+プレビュー: 入力フレーム → CIImage → CIFilter チェーン → 全画角表示（フレーム外は UI で暗く）
+保存:      撮影データ → CIImage → 中央フレーム Crop（3:4・視野の80%） → CIFilter チェーン → HEIC
 ```
 
 ## フィルター構成要素（例）

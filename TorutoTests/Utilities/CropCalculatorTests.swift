@@ -42,11 +42,36 @@ struct CropCalculatorTests {
     }
 
     @Test
+    func スケール指定で中央に縮小した矩形を返す() {
+        let rect = CropCalculator.centeredCropRect(
+            in: CGRect(x: 0, y: 0, width: 4000, height: 3000),
+            aspectRatio: aspect3x4,
+            scale: 0.8
+        )
+        #expect(rect == CGRect(x: 1100, y: 300, width: 1800, height: 2400))
+    }
+
+    @Test
+    func ちょうど3対4の入力にスケールを掛けると中央の80パーセントになる() {
+        let rect = CropCalculator.centeredCropRect(
+            in: CGRect(x: 0, y: 0, width: 3000, height: 4000),
+            aspectRatio: aspect3x4,
+            scale: 0.8
+        )
+        #expect(rect == CGRect(x: 300, y: 400, width: 2400, height: 3200))
+    }
+
+    @Test
     func 不正な入力は空の矩形を返す() {
         #expect(CropCalculator.centeredCropRect(in: .zero, aspectRatio: aspect3x4) == .zero)
         #expect(CropCalculator.centeredCropRect(
             in: CGRect(x: 0, y: 0, width: 100, height: 100),
             aspectRatio: 0
+        ) == .zero)
+        #expect(CropCalculator.centeredCropRect(
+            in: CGRect(x: 0, y: 0, width: 100, height: 100),
+            aspectRatio: aspect3x4,
+            scale: 0
         ) == .zero)
     }
 }

@@ -5,9 +5,6 @@ import CoreImage.CIFilterBuiltins
 /// CIContext は生成コストが高いため 1 インスタンスで使い回す。
 /// CIContext / CIFilter 生成はスレッドセーフなため @unchecked Sendable とする。
 final class DefaultImageProcessor: ImageProcessor, @unchecked Sendable {
-    /// 中央フレームの比率（幅:高さ = 3:4 固定）
-    static let frameAspectRatio: CGFloat = 3.0 / 4.0
-
     private let ciContext: CIContext
 
     init(ciContext: CIContext = CIContext()) {
@@ -16,7 +13,7 @@ final class DefaultImageProcessor: ImageProcessor, @unchecked Sendable {
 
     func process(_ image: CIImage, with parameters: FilterParameters) -> CIImage {
         let cropped = cropToCenterFrame(image)
-        return applyFilters(to: cropped, parameters: parameters)
+        return applyFilters(to: cropped, with: parameters)
     }
 
     func renderCGImage(from image: CIImage) -> CGImage? {
@@ -71,16 +68,20 @@ final class DefaultImageProcessor: ImageProcessor, @unchecked Sendable {
         return formatter
     }()
 
-    /// 中央 3:4 で切り出し、原点を (0, 0) に揃える
+    /// 中央フレーム（3:4・視野の 80%）で切り出し、原点を (0, 0) に揃える
     private func cropToCenterFrame(_ image: CIImage) -> CIImage {
-        let rect = CropCalculator.centeredCropRect(in: image.extent, aspectRatio: Self.frameAspectRatio)
+        let rect = CropCalculator.centeredCropRect(
+            in: image.extent,
+            aspectRatio: CameraFrame.aspectRatio,
+            scale: CameraFrame.scale
+        )
         guard !rect.isEmpty else { return image }
         return image
             .cropped(to: rect)
             .transformed(by: CGAffineTransform(translationX: -rect.origin.x, y: -rect.origin.y))
     }
 
-    private func applyFilters(to image: CIImage, parameters p: FilterParameters) -> CIImage {
+    func applyFilters(to image: CIImage, with p: FilterParameters) -> CIImage {
         let extent = image.extent
         var result = image
 

@@ -14,6 +14,14 @@ final class MockImageProcessor: ImageProcessor, @unchecked Sendable {
         return image
     }
 
+    func applyFilters(to image: CIImage, with parameters: FilterParameters) -> CIImage {
+        applyFiltersCallCount += 1
+        lastParameters = parameters
+        return image
+    }
+
+    private(set) var applyFiltersCallCount = 0
+
     func makePhotoData(from image: CIImage) -> Data? {
         Data([0x01])
     }
