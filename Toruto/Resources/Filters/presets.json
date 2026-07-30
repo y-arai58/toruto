@@ -12,6 +12,18 @@
     }
   },
   {
+    "id": "ccd_vivid",
+    "displayName": "CCD Vivid",
+    "filterParameters": {
+      "saturation": 1.4,
+      "contrast": 1.12,
+      "temperature": 6000,
+      "tint": -6,
+      "bloomIntensity": 0.4,
+      "bloomRadius": 8
+    }
+  },
+  {
     "id": "digital_compact",
     "displayName": "Digital Compact",
     "filterParameters": {
@@ -19,6 +31,19 @@
       "saturation": 1.05,
       "vignetteIntensity": 0.4,
       "vignetteRadius": 1.4
+    }
+  },
+  {
+    "id": "compact_retro",
+    "displayName": "Compact Retro",
+    "filterParameters": {
+      "brightness": 0.02,
+      "contrast": 0.98,
+      "temperature": 6900,
+      "tint": 2,
+      "grainIntensity": 0.2,
+      "vignetteIntensity": 0.6,
+      "vignetteRadius": 1.5
     }
   },
   {
@@ -32,6 +57,19 @@
       "grainIntensity": 0.7,
       "vignetteIntensity": 1.0,
       "vignetteRadius": 1.8
+    }
+  },
+  {
+    "id": "film",
+    "displayName": "Film",
+    "filterParameters": {
+      "saturation": 0.9,
+      "contrast": 1.02,
+      "temperature": 6800,
+      "tint": 2,
+      "grainIntensity": 0.4,
+      "vignetteIntensity": 0.5,
+      "vignetteRadius": 1.6
     }
   },
   {

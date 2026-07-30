@@ -4,11 +4,11 @@ import Testing
 
 struct BundlePresetRepositoryTests {
     @Test
-    func アプリバンドルから6プリセットを読み込める() throws {
+    func アプリバンドルから9プリセットを読み込める() throws {
         let repository = BundlePresetRepository(bundle: .main)
         let presets = try repository.loadPresets()
 
-        #expect(presets.count == 6)
+        #expect(presets.count == 9)
         #expect(presets.first?.id == "ccd")
         #expect(Set(presets.map(\.id)).count == presets.count)
     }

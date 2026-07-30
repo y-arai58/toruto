@@ -1,8 +1,9 @@
 # TASK-005: UI 改善（前面/背面切替・仕上げ）
 
-- status: in-progress
+- status: done
 - priority: high
 - started_at: 2026-07-30
+- completed_at: 2026-07-30
 
 ## Goal
 
@@ -15,7 +16,7 @@ Phase 1 の仕上げ。bottomBar に予約してあった前面/背面切替を�
 - [x] 切替ボタンはタップ領域 44pt 以上・切替中は連打不可
 - [x] 中央フレームの境界が視認できる（保存領域の明示を強化）
 - [x] ViewModel の切替ロジックの単体テストがある
-- [ ] swiftc 型チェック通過 + ユーザー環境でテスト通過（型チェックは通過済み。テスト実行待ち）
+- [x] swiftc 型チェック通過 + ユーザー環境でテスト通過
 
 ## Sub Tasks
 
@@ -29,3 +30,4 @@ Phase 1 の仕上げ。bottomBar に予約してあった前面/背面切替を�
 | Date | Action | Note |
 |---|---|---|
 | 2026-07-30 | created | Phase 1 仕上げとして開始 |
+| 2026-07-30 | completed | PR #6 マージ済み |
