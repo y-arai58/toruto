@@ -11,7 +11,8 @@ struct CameraViewModelTests {
         photoLibrary: MockPhotoLibraryService = MockPhotoLibraryService(),
         favoriteStore: MockFavoriteStore = MockFavoriteStore(),
         settingsStore: MockSettingsStore = MockSettingsStore(),
-        soundPlayer: MockShutterSoundPlayer = MockShutterSoundPlayer()
+        soundPlayer: MockShutterSoundPlayer = MockShutterSoundPlayer(),
+        customPresetStore: MockCustomPresetStore = MockCustomPresetStore()
     ) -> CameraViewModel {
         CameraViewModel(
             cameraService: service,
@@ -20,7 +21,8 @@ struct CameraViewModelTests {
             photoLibraryService: photoLibrary,
             favoriteStore: favoriteStore,
             settingsStore: settingsStore,
-            shutterSoundPlayer: soundPlayer
+            shutterSoundPlayer: soundPlayer,
+            customPresetStore: customPresetStore
         )
     }
 
@@ -246,6 +248,82 @@ struct CameraViewModelTests {
 
         #expect(viewModel.presets.map(\.id) == ["b", "a"])
         #expect(viewModel.currentPreset?.id == "b")
+    }
+
+    @Test
+    func saveDraft_カスタムプリセットが追加され選択される() {
+        let store = MockCustomPresetStore()
+        let viewModel = makeViewModel(customPresetStore: store)
+        let source = viewModel.presets[0]
+
+        viewModel.beginCustomizing(from: source)
+        var adjusted = source.filterParameters
+        adjusted.saturation = 1.3
+        viewModel.updateDraftParameters(adjusted)
+        viewModel.saveDraft(name: "My Camera")
+
+        #expect(viewModel.draft == nil)
+        #expect(store.loadCustomPresets().count == 1)
+        #expect(viewModel.currentPreset?.displayName == "My Camera")
+        #expect(viewModel.currentPreset?.filterParameters.saturation == 1.3)
+        #expect(viewModel.isCustom(viewModel.currentPreset!))
+    }
+
+    @Test
+    func cancelDraft_破棄するとプレビューが現在のプリセットに戻る() {
+        let viewModel = makeViewModel()
+        let source = viewModel.presets[0]
+
+        viewModel.beginCustomizing(from: source)
+        viewModel.cancelDraft()
+
+        #expect(viewModel.draft == nil)
+        #expect(viewModel.presets.count == 1)
+    }
+
+    @Test
+    func saveDraft_空の名前はデフォルト名で保存される() {
+        let store = MockCustomPresetStore()
+        let viewModel = makeViewModel(customPresetStore: store)
+
+        viewModel.beginCustomizing(from: viewModel.presets[0])
+        viewModel.saveDraft(name: "   ")
+
+        #expect(store.loadCustomPresets().first?.displayName == "Test +")
+    }
+
+    @Test
+    func deleteCustomPreset_削除すると一覧から消え先頭が選択される() {
+        let custom = CameraPreset(id: "custom_x", displayName: "X", filterParameters: FilterParameters())
+        let store = MockCustomPresetStore(presets: [custom])
+        let viewModel = makeViewModel(customPresetStore: store)
+        viewModel.selectPreset(custom)
+
+        viewModel.deleteCustomPreset(custom)
+
+        #expect(store.loadCustomPresets().isEmpty)
+        #expect(!viewModel.presets.contains { $0.id == "custom_x" })
+        #expect(viewModel.currentPreset?.id == "test")
+    }
+
+    @Test
+    func deleteCustomPreset_バンドル定義は削除できない() {
+        let viewModel = makeViewModel()
+        let bundled = viewModel.presets[0]
+
+        viewModel.deleteCustomPreset(bundled)
+
+        #expect(viewModel.presets.contains { $0.id == bundled.id })
+    }
+
+    @Test
+    func init_カスタムプリセットも一覧に読み込まれる() {
+        let custom = CameraPreset(id: "custom_x", displayName: "X", filterParameters: FilterParameters())
+        let store = MockCustomPresetStore(presets: [custom])
+        let viewModel = makeViewModel(customPresetStore: store)
+
+        #expect(viewModel.presets.map(\.id) == ["test", "custom_x"])
+        #expect(viewModel.isCustom(custom))
     }
 
     @Test

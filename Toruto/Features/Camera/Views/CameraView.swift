@@ -33,8 +33,11 @@ struct CameraView: View {
                     presets: viewModel.presets,
                     currentPreset: viewModel.currentPreset,
                     isFavorite: { viewModel.isFavorite($0) },
+                    isCustom: { viewModel.isCustom($0) },
                     onSelect: { viewModel.selectPreset($0) },
-                    onToggleFavorite: { viewModel.toggleFavorite($0) }
+                    onToggleFavorite: { viewModel.toggleFavorite($0) },
+                    onCustomize: { viewModel.beginCustomizing(from: $0) },
+                    onDelete: { viewModel.deleteCustomPreset($0) }
                 )
 
                 bottomBar
@@ -67,6 +70,25 @@ struct CameraView: View {
         .sensoryFeedback(.impact(weight: .light), trigger: viewModel.favoritePresetIDs)
         .sheet(isPresented: $isHistoryPresented) {
             HistoryView()
+        }
+        .sheet(
+            isPresented: Binding(
+                get: { viewModel.draft != nil },
+                set: { isPresented in
+                    if !isPresented, viewModel.draft != nil {
+                        viewModel.cancelDraft()
+                    }
+                }
+            )
+        ) {
+            if let draft = viewModel.draft {
+                CustomPresetEditorView(
+                    initialDraft: draft,
+                    onChange: { viewModel.updateDraftParameters($0) },
+                    onSave: { viewModel.saveDraft(name: $0) },
+                    onCancel: { viewModel.cancelDraft() }
+                )
+            }
         }
     }
 
