@@ -1,15 +1,17 @@
 @testable import Toruto
 
 final class MockPresetRepository: PresetRepository {
-    var result: Result<[CameraPreset], Error>
+    var result: Result<[CameraPresetPack], Error>
 
     init(presets: [CameraPreset] = [
         CameraPreset(id: "test", displayName: "Test", filterParameters: FilterParameters()),
     ]) {
-        result = .success(presets)
+        result = .success([
+            CameraPresetPack(id: "test_pack", displayName: "Test Pack", presets: presets),
+        ])
     }
 
-    func loadPresets() throws -> [CameraPreset] {
+    func loadPacks() throws -> [CameraPresetPack] {
         try result.get()
     }
 }

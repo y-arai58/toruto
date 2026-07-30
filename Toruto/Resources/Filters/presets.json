@@ -1,113 +1,155 @@
 [
   {
-    "id": "ccd",
-    "displayName": "CCD",
-    "filterParameters": {
-      "saturation": 1.25,
-      "contrast": 1.05,
-      "temperature": 6200,
-      "tint": -4,
-      "bloomIntensity": 0.3,
-      "bloomRadius": 6
-    }
+    "id": "essentials",
+    "displayName": "Essentials",
+    "presets": [
+      {
+        "id": "ccd",
+        "displayName": "CCD",
+        "filterParameters": {
+          "saturation": 1.25,
+          "contrast": 1.05,
+          "temperature": 6200,
+          "tint": -4,
+          "bloomIntensity": 0.3,
+          "bloomRadius": 6
+        }
+      },
+      {
+        "id": "ccd_vivid",
+        "displayName": "CCD Vivid",
+        "filterParameters": {
+          "saturation": 1.4,
+          "contrast": 1.12,
+          "temperature": 6000,
+          "tint": -6,
+          "bloomIntensity": 0.4,
+          "bloomRadius": 8
+        }
+      },
+      {
+        "id": "digital_compact",
+        "displayName": "Digital Compact",
+        "filterParameters": {
+          "contrast": 1.08,
+          "saturation": 1.05,
+          "vignetteIntensity": 0.4,
+          "vignetteRadius": 1.4
+        }
+      },
+      {
+        "id": "compact_retro",
+        "displayName": "Compact Retro",
+        "filterParameters": {
+          "brightness": 0.02,
+          "contrast": 0.98,
+          "temperature": 6900,
+          "tint": 2,
+          "grainIntensity": 0.2,
+          "vignetteIntensity": 0.6,
+          "vignetteRadius": 1.5
+        }
+      },
+      {
+        "id": "disposable",
+        "displayName": "Disposable",
+        "filterParameters": {
+          "saturation": 0.95,
+          "contrast": 1.1,
+          "temperature": 5600,
+          "tint": 6,
+          "grainIntensity": 0.7,
+          "vignetteIntensity": 1.0,
+          "vignetteRadius": 1.8
+        }
+      },
+      {
+        "id": "film",
+        "displayName": "Film",
+        "filterParameters": {
+          "saturation": 0.9,
+          "contrast": 1.02,
+          "temperature": 6800,
+          "tint": 2,
+          "grainIntensity": 0.4,
+          "vignetteIntensity": 0.5,
+          "vignetteRadius": 1.6
+        }
+      },
+      {
+        "id": "flash",
+        "displayName": "Flash",
+        "filterParameters": {
+          "brightness": 0.05,
+          "contrast": 1.25,
+          "saturation": 1.1,
+          "bloomIntensity": 0.8,
+          "bloomRadius": 12,
+          "vignetteIntensity": 0.5,
+          "vignetteRadius": 1.6
+        }
+      },
+      {
+        "id": "soft",
+        "displayName": "Soft",
+        "filterParameters": {
+          "contrast": 0.9,
+          "saturation": 0.85,
+          "brightness": 0.03,
+          "blurRadius": 1.5,
+          "bloomIntensity": 0.4,
+          "bloomRadius": 10
+        }
+      },
+      {
+        "id": "vintage",
+        "displayName": "Vintage",
+        "filterParameters": {
+          "saturation": 0.8,
+          "contrast": 0.95,
+          "temperature": 7200,
+          "tint": 4,
+          "grainIntensity": 0.5,
+          "vignetteIntensity": 0.7,
+          "vignetteRadius": 1.7
+        }
+      }
+    ]
   },
   {
-    "id": "ccd_vivid",
-    "displayName": "CCD Vivid",
-    "filterParameters": {
-      "saturation": 1.4,
-      "contrast": 1.12,
-      "temperature": 6000,
-      "tint": -6,
-      "bloomIntensity": 0.4,
-      "bloomRadius": 8
-    }
-  },
-  {
-    "id": "digital_compact",
-    "displayName": "Digital Compact",
-    "filterParameters": {
-      "contrast": 1.08,
-      "saturation": 1.05,
-      "vignetteIntensity": 0.4,
-      "vignetteRadius": 1.4
-    }
-  },
-  {
-    "id": "compact_retro",
-    "displayName": "Compact Retro",
-    "filterParameters": {
-      "brightness": 0.02,
-      "contrast": 0.98,
-      "temperature": 6900,
-      "tint": 2,
-      "grainIntensity": 0.2,
-      "vignetteIntensity": 0.6,
-      "vignetteRadius": 1.5
-    }
-  },
-  {
-    "id": "disposable",
-    "displayName": "Disposable",
-    "filterParameters": {
-      "saturation": 0.95,
-      "contrast": 1.1,
-      "temperature": 5600,
-      "tint": 6,
-      "grainIntensity": 0.7,
-      "vignetteIntensity": 1.0,
-      "vignetteRadius": 1.8
-    }
-  },
-  {
-    "id": "film",
-    "displayName": "Film",
-    "filterParameters": {
-      "saturation": 0.9,
-      "contrast": 1.02,
-      "temperature": 6800,
-      "tint": 2,
-      "grainIntensity": 0.4,
-      "vignetteIntensity": 0.5,
-      "vignetteRadius": 1.6
-    }
-  },
-  {
-    "id": "flash",
-    "displayName": "Flash",
-    "filterParameters": {
-      "brightness": 0.05,
-      "contrast": 1.25,
-      "saturation": 1.1,
-      "bloomIntensity": 0.8,
-      "bloomRadius": 12,
-      "vignetteIntensity": 0.5,
-      "vignetteRadius": 1.6
-    }
-  },
-  {
-    "id": "soft",
-    "displayName": "Soft",
-    "filterParameters": {
-      "contrast": 0.9,
-      "saturation": 0.85,
-      "brightness": 0.03,
-      "blurRadius": 1.5,
-      "bloomIntensity": 0.4,
-      "bloomRadius": 10
-    }
-  },
-  {
-    "id": "vintage",
-    "displayName": "Vintage",
-    "filterParameters": {
-      "saturation": 0.8,
-      "contrast": 0.95,
-      "temperature": 7200,
-      "tint": 4,
-      "grainIntensity": 0.5,
-      "vignetteIntensity": 0.7,
-      "vignetteRadius": 1.7
-    }
+    "id": "mono",
+    "displayName": "Mono Pack",
+    "presets": [
+      {
+        "id": "mono",
+        "displayName": "Mono",
+        "filterParameters": {
+          "saturation": 0,
+          "contrast": 1.05
+        }
+      },
+      {
+        "id": "mono_hard",
+        "displayName": "Mono Hard",
+        "filterParameters": {
+          "saturation": 0,
+          "contrast": 1.3,
+          "brightness": 0.02,
+          "vignetteIntensity": 0.6,
+          "vignetteRadius": 1.6
+        }
+      },
+      {
+        "id": "mono_film",
+        "displayName": "Mono Film",
+        "filterParameters": {
+          "saturation": 0,
+          "contrast": 1.1,
+          "grainIntensity": 0.6,
+          "vignetteIntensity": 0.8,
+          "vignetteRadius": 1.7
+        }
+      }
+    ]
   }
 ]
