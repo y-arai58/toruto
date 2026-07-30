@@ -33,7 +33,7 @@
 - [x] レンズ切り替え
 - [x] ランダムカメラ
 - [x] 撮影履歴
-- [ ] iCloud 同期（検討）
+- [x] iCloud 同期（検討）→ 結論は [icloud_sync.md](icloud_sync.md)（MVP 時点では実装しない）
 
 ## 実装順の方針
 
