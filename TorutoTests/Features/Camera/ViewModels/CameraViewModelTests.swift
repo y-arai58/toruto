@@ -94,6 +94,29 @@ struct CameraViewModelTests {
     }
 
     @Test
+    func makePreviewStream_最初のフレーム到達でhasPreviewFrameがtrueになる() async {
+        let service = MockCameraService()
+        let viewModel = makeViewModel(service: service)
+
+        #expect(viewModel.hasPreviewFrame == false)
+
+        let stream = viewModel.makePreviewStream()
+        var iterator = stream.makeAsyncIterator()
+        let frame = CIImage(color: .gray).cropped(to: CGRect(x: 0, y: 0, width: 3, height: 4))
+
+        service.emitPreviewFrame(frame)
+        _ = await iterator.next()
+
+        // 通知は非 MainActor のタスクから届くため、反映されるまで待つ
+        var waited = 0
+        while !viewModel.hasPreviewFrame, waited < 100 {
+            try? await Task.sleep(for: .milliseconds(10))
+            waited += 1
+        }
+        #expect(viewModel.hasPreviewFrame)
+    }
+
+    @Test
     func startSession_成功時はrunningになる() async {
         let service = MockCameraService()
         let viewModel = makeViewModel(service: service)
