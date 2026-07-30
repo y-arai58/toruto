@@ -17,8 +17,8 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
     private var currentInput: AVCaptureDeviceInput?
     private var exposureBias: Float = 0
     private var isFlashEnabled = false
-    /// 生バッファに適用する表示向き。videoQueue から読むためロックで保護する
-    private let orientation = LockedValue(CameraOrientation.portrait(for: .back))
+    /// 前面カメラを使っているか。videoQueue から読むためロックで保護する
+    private let isUsingFrontCamera = LockedValue(false)
 
     private let continuationsLock = NSLock()
     private var frameContinuations: [UUID: AsyncStream<CIImage>.Continuation] = [:]
@@ -164,8 +164,15 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
                 if self.isFlashEnabled, self.photoOutput.supportedFlashModes.contains(.on) {
                     settings.flashMode = .on
                 }
-                // 撮影中にカメラを切り替えられても、この撮影の向きは確定させておく
-                let captureOrientation = CameraOrientation.portrait(for: self.position)
+                // 接続が実際に適用した変換を読み戻し、不足分だけを向きとして返す。
+                // 撮影中にカメラを切り替えられても、この撮影の向きは確定させておく。
+                // 保存画像は鏡像にしない（iOS 標準の挙動に合わせる）
+                let photoConnection = self.photoOutput.connection(with: .video)
+                let captureOrientation = CameraOrientation.remaining(
+                    appliedRotation: photoConnection?.videoRotationAngle ?? 0,
+                    appliedMirroring: photoConnection?.isVideoMirrored ?? false,
+                    mirrored: false
+                )
                 let uniqueID = settings.uniqueID
                 let delegate = PhotoCaptureDelegate { [weak self] result in
                     continuation.resume(with: result.map {
@@ -209,7 +216,6 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         session.addOutput(videoOutput)
         session.addOutput(photoOutput)
 
-        resetConnectionTransforms()
         updateOrientation()
         isConfigured = true
     }
@@ -233,7 +239,6 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
                 session.addInput(currentInput)
             }
             session.commitConfiguration()
-            resetConnectionTransforms()
             updateOrientation()
             throw CameraServiceError.deviceUnavailable
         }
@@ -243,7 +248,6 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         lens = newLens
         session.commitConfiguration()
 
-        resetConnectionTransforms()
         updateOrientation()
         // 切替後も露出補正を維持する
         try? applyExposureBias()
@@ -272,26 +276,9 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         }
     }
 
-    /// sessionQueue 上で呼ぶこと。現在のカメラ位置に対応する表示向きを反映する
+    /// sessionQueue 上で呼ぶこと。videoQueue から参照する鏡像フラグを更新する
     private func updateOrientation() {
-        orientation.value = CameraOrientation.portrait(for: position)
-    }
-
-    /// sessionQueue 上で呼ぶこと。
-    /// 接続側の回転・ミラーを無効に固定し、向きの補正を CameraOrientation の一箇所に集約する。
-    /// 接続への設定は入力を張り替えると黙って落ちることがあるため、
-    /// ここでの設定が効かなくても表示向きは壊れない（無効が既定値と同じため）
-    private func resetConnectionTransforms() {
-        for connection in [videoOutput.connection(with: .video), photoOutput.connection(with: .video)] {
-            guard let connection else { continue }
-            if connection.isVideoRotationAngleSupported(0) {
-                connection.videoRotationAngle = 0
-            }
-            if connection.isVideoMirroringSupported {
-                connection.automaticallyAdjustsVideoMirroring = false
-                connection.isVideoMirrored = false
-            }
-        }
+        isUsingFrontCamera.value = (position == .front)
     }
 }
 
@@ -302,8 +289,14 @@ extension DefaultCameraService: AVCaptureVideoDataOutputSampleBufferDelegate {
         from connection: AVCaptureConnection
     ) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        // 生バッファは横向きで届く。縦持ちの表示向きへここで揃える
-        let image = CIImage(cvPixelBuffer: pixelBuffer).oriented(orientation.value)
+        // 接続が実際に適用した変換を読み戻し、不足分だけをここで補う。
+        // プレビューは鏡と同じ見え方にしたいので、前面のときだけ鏡像にする
+        let orientation = CameraOrientation.remaining(
+            appliedRotation: connection.videoRotationAngle,
+            appliedMirroring: connection.isVideoMirrored,
+            mirrored: isUsingFrontCamera.value
+        )
+        let image = CIImage(cvPixelBuffer: pixelBuffer).oriented(orientation)
         continuationsLock.lock()
         let continuations = Array(frameContinuations.values)
         continuationsLock.unlock()

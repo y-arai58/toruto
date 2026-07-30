@@ -1,26 +1,54 @@
 import AVFoundation
+import CoreGraphics
 import ImageIO
 
-/// センサーから届く生バッファを、縦持ちの表示向きへ揃えるための向き。
+/// センサーから届いたバッファを、縦持ちの表示向きへ揃えるための向きを決める。
 ///
-/// 向きの補正を `AVCaptureConnection` の `videoRotationAngle` / `isVideoMirrored` に
-/// 任せると、入力を張り替えたときに設定が黙って適用されないことがある。
-/// 実際 TASK-019 で「commit の後に設定する」修正を入れても前面カメラの横向きは直らず、
-/// プレビュー・保存画像の両方が横向きのままだった。
+/// `AVCaptureConnection` への `videoRotationAngle` / `isVideoMirrored` の設定は、
+/// 入力を張り替えた直後だと**エラーも警告もなく適用されない**ことがある。
+/// その結果「設定したつもりの値」と「実際にバッファへ適用された値」がずれる。
 ///
-/// そのため向きの補正は接続に任せず、常にここで決めた値をコード側で適用する。
+/// 実際に前面カメラでは、初回構成（背面）で設定した 90 度が接続に残ったままバッファが届き、
+/// そこへソフト側でもう 90 度足して二重回転していた（TASK-019 → TASK-024 → TASK-025）。
+///
+/// そのため設定値は一切あてにせず、**接続から読み戻した実測値**を基準に
+/// 「あとどれだけ回す / 反転するか」だけを計算する。
+/// 接続への設定が効いても効かなくても、最終的な表示向きは同じになる。
+///
 /// アプリは縦持ち固定（`UISupportedInterfaceOrientations = Portrait`）なので、
 /// 端末の向きは考慮しない。
 enum CameraOrientation {
-    /// 縦持ちでの表示向き。
+    /// 縦持ち表示に必要な、センサー生バッファからの合計回転角（度）
+    static let portraitRotation: CGFloat = 90
+
+    /// 接続側で既に適用された変換を差し引いた、残りの向き。
     ///
-    /// - 背面: 生バッファは横向きで届くため 90 度回して縦にする（`.right`）
-    /// - 前面: 90 度回したうえで左右反転し、鏡と同じ見え方にする（`.leftMirrored`）
-    ///
-    /// 実機で前面が上下逆さまに見える場合は `.rightMirrored` に入れ替える
-    /// （`.leftMirrored` と `.rightMirrored` は 180 度の違い）。
-    /// 前面が鏡像になっていない（服の文字がそのまま読める）場合は `.right` に入れ替える。
-    static func portrait(for position: AVCaptureDevice.Position) -> CGImagePropertyOrientation {
-        position == .front ? .leftMirrored : .right
+    /// - Parameters:
+    ///   - appliedRotation: 接続から読み戻した `videoRotationAngle`
+    ///   - appliedMirroring: 接続から読み戻した `isVideoMirrored`
+    ///   - mirrored: 最終的に鏡像にしたいか（プレビューは true、保存画像は false）
+    static func remaining(
+        appliedRotation: CGFloat,
+        appliedMirroring: Bool,
+        mirrored: Bool
+    ) -> CGImagePropertyOrientation {
+        let rotation = normalized(portraitRotation - appliedRotation)
+        let needsMirroring = mirrored != appliedMirroring
+
+        switch (Int(rotation.rounded()), needsMirroring) {
+        case (90, false): return .right
+        case (90, true): return .leftMirrored
+        case (180, false): return .down
+        case (180, true): return .downMirrored
+        case (270, false): return .left
+        case (270, true): return .rightMirrored
+        default: return needsMirroring ? .upMirrored : .up
+        }
+    }
+
+    /// 0 以上 360 未満に丸める
+    private static func normalized(_ angle: CGFloat) -> CGFloat {
+        let wrapped = angle.truncatingRemainder(dividingBy: 360)
+        return wrapped < 0 ? wrapped + 360 : wrapped
     }
 }

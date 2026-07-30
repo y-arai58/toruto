@@ -602,7 +602,7 @@ struct CameraViewModelTests {
         // 横長（6x4）の撮影データを縦向きへ補正すると 4x6 になる
         let service = MockCameraService()
         service.captureResult = .success(Self.makeImageData(width: 6, height: 4))
-        service.captureOrientation = CameraOrientation.portrait(for: .front)
+        service.captureOrientation = .right
         let processor = MockImageProcessor()
         let viewModel = makeViewModel(service: service, processor: processor)
         await viewModel.startSession()
