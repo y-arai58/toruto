@@ -133,6 +133,26 @@ struct CameraView: View {
                 }
                 .accessibilityLabel(viewModel.isFlashEnabled ? "フラッシュをオフ" : "フラッシュをオン")
 
+                Menu {
+                    ForEach(ShutterSound.allCases, id: \.self) { sound in
+                        Button {
+                            viewModel.selectShutterSound(sound)
+                        } label: {
+                            if sound == viewModel.shutterSound {
+                                Label(sound.displayName, systemImage: "checkmark")
+                            } else {
+                                Text(sound.displayName)
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "speaker.wave.2")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.7))
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("シャッター音を選ぶ")
+
                 Spacer()
 
                 Button {

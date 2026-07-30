@@ -25,6 +25,7 @@ final class CameraViewModel {
     private(set) var exposureBias: Double = 0
     private(set) var isFlashEnabled = false
     private(set) var isDateStampEnabled = false
+    private(set) var shutterSound: ShutterSound = .classic
     private(set) var lastCapturedImage: UIImage?
     /// 表示順のプリセット一覧（お気に入りが先頭、それ以外は定義順）
     private(set) var presets: [CameraPreset] = []
@@ -38,6 +39,7 @@ final class CameraViewModel {
     private let photoLibraryService: any PhotoLibraryService
     private let favoriteStore: any FavoriteStore
     private let settingsStore: any SettingsStore
+    private let shutterSoundPlayer: any ShutterSoundPlayer
     /// presets.json の定義順
     private var orderedPresets: [CameraPreset] = []
     /// プレビュー処理タスク（非 MainActor）と共有するフィルターパラメータ
@@ -49,7 +51,8 @@ final class CameraViewModel {
         presetRepository: (any PresetRepository)? = nil,
         photoLibraryService: (any PhotoLibraryService)? = nil,
         favoriteStore: (any FavoriteStore)? = nil,
-        settingsStore: (any SettingsStore)? = nil
+        settingsStore: (any SettingsStore)? = nil,
+        shutterSoundPlayer: (any ShutterSoundPlayer)? = nil
     ) {
         self.cameraService = cameraService ?? DefaultCameraService()
         self.imageProcessor = imageProcessor ?? DefaultImageProcessor()
@@ -57,7 +60,9 @@ final class CameraViewModel {
         self.photoLibraryService = photoLibraryService ?? DefaultPhotoLibraryService()
         self.favoriteStore = favoriteStore ?? UserDefaultsFavoriteStore()
         self.settingsStore = settingsStore ?? UserDefaultsSettingsStore()
+        self.shutterSoundPlayer = shutterSoundPlayer ?? SystemShutterSoundPlayer()
         isDateStampEnabled = self.settingsStore.isDateStampEnabled
+        shutterSound = self.settingsStore.shutterSound
         loadPresets()
     }
 
@@ -119,6 +124,11 @@ final class CameraViewModel {
         settingsStore.isDateStampEnabled = isDateStampEnabled
     }
 
+    func selectShutterSound(_ sound: ShutterSound) {
+        shutterSound = sound
+        settingsStore.shutterSound = sound
+    }
+
     /// 露出補正（EV）。UI からは -2〜+2 の範囲で渡す
     func adjustExposure(_ bias: Double) async {
         guard status == .running else { return }
@@ -153,6 +163,7 @@ final class CameraViewModel {
         isCapturing = true
         saveError = nil
         defer { isCapturing = false }
+        shutterSoundPlayer.play(shutterSound)
         do {
             let data = try await cameraService.capturePhoto()
             guard let processed = processCapturedPhoto(data) else {
