@@ -10,7 +10,8 @@ struct CameraViewModelTests {
         repository: MockPresetRepository = MockPresetRepository(),
         photoLibrary: MockPhotoLibraryService = MockPhotoLibraryService(),
         favoriteStore: MockFavoriteStore = MockFavoriteStore(),
-        settingsStore: MockSettingsStore = MockSettingsStore()
+        settingsStore: MockSettingsStore = MockSettingsStore(),
+        soundPlayer: MockShutterSoundPlayer = MockShutterSoundPlayer()
     ) -> CameraViewModel {
         CameraViewModel(
             cameraService: service,
@@ -18,7 +19,8 @@ struct CameraViewModelTests {
             presetRepository: repository,
             photoLibraryService: photoLibrary,
             favoriteStore: favoriteStore,
-            settingsStore: settingsStore
+            settingsStore: settingsStore,
+            shutterSoundPlayer: soundPlayer
         )
     }
 
@@ -244,6 +246,44 @@ struct CameraViewModelTests {
 
         #expect(viewModel.presets.map(\.id) == ["b", "a"])
         #expect(viewModel.currentPreset?.id == "b")
+    }
+
+    @Test
+    func selectShutterSound_選択が永続化される() {
+        let store = MockSettingsStore()
+        let viewModel = makeViewModel(settingsStore: store)
+
+        viewModel.selectShutterSound(.film)
+
+        #expect(viewModel.shutterSound == .film)
+        #expect(store.shutterSound == .film)
+    }
+
+    @Test
+    func capturePhoto_選択中のシャッター音が鳴る() async {
+        let service = MockCameraService()
+        service.captureResult = .success(Self.makeImageData())
+        let player = MockShutterSoundPlayer()
+        let viewModel = makeViewModel(
+            service: service,
+            settingsStore: MockSettingsStore(shutterSound: .digital),
+            soundPlayer: player
+        )
+        await viewModel.startSession()
+
+        await viewModel.capturePhoto()
+
+        #expect(player.playedSounds == [.digital])
+    }
+
+    @Test
+    func capturePhoto_起動前はシャッター音も鳴らない() async {
+        let player = MockShutterSoundPlayer()
+        let viewModel = makeViewModel(soundPlayer: player)
+
+        await viewModel.capturePhoto()
+
+        #expect(player.playedSounds.isEmpty)
     }
 
     @Test
