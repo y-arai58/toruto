@@ -178,19 +178,30 @@ struct CameraView: View {
     /// 縦向きに補正できていれば「縦長」になる（TASK-024 の確認が済んだら削除する）
     @ViewBuilder
     private var previewSizeReadout: some View {
-        if let size = viewModel.previewFrameSize {
-            VStack {
-                Text("\(Int(size.width))x\(Int(size.height)) \(size.width > size.height ? "横長" : "縦長")")
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(.black.opacity(0.5), in: Capsule())
-                    .padding(.top, 8)
-                Spacer()
+        VStack(spacing: 2) {
+            if let size = viewModel.previewFrameSize {
+                readoutLabel("表示 \(Self.describe(size))")
             }
-            .allowsHitTesting(false)
+            if let size = viewModel.lastPhotoSize {
+                readoutLabel("写真 \(Self.describe(size))")
+            }
+            Spacer()
         }
+        .padding(.top, 8)
+        .allowsHitTesting(false)
+    }
+
+    private func readoutLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.caption2.monospacedDigit())
+            .foregroundStyle(.white)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(.black.opacity(0.5), in: Capsule())
+    }
+
+    private static func describe(_ size: CGSize) -> String {
+        "\(Int(size.width))x\(Int(size.height)) \(size.width > size.height ? "横長" : "縦長")"
     }
 
     @ViewBuilder

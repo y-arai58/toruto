@@ -153,8 +153,8 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         }
     }
 
-    func capturePhoto() async throws -> CapturedPhoto {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CapturedPhoto, Error>) in
+    func capturePhoto() async throws -> Data {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
             sessionQueue.async {
                 guard self.session.isRunning else {
                     continuation.resume(throwing: CameraServiceError.captureFailed)
@@ -164,20 +164,12 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
                 if self.isFlashEnabled, self.photoOutput.supportedFlashModes.contains(.on) {
                     settings.flashMode = .on
                 }
-                // 接続が実際に適用した変換を読み戻し、不足分だけを向きとして返す。
-                // 撮影中にカメラを切り替えられても、この撮影の向きは確定させておく。
-                // 保存画像は鏡像にしない（iOS 標準の挙動に合わせる）
-                let photoConnection = self.photoOutput.connection(with: .video)
-                let captureOrientation = CameraOrientation.remaining(
-                    appliedRotation: photoConnection?.videoRotationAngle ?? 0,
-                    appliedMirroring: photoConnection?.isVideoMirrored ?? false,
-                    mirrored: false
-                )
+                // 向きは接続のプロパティから計算しない。
+                // それらは実際にバッファへ起きたことと一致しないため、
+                // 写真は AVFoundation が書いた EXIF をそのまま使う（読み出し側で適用する）
                 let uniqueID = settings.uniqueID
                 let delegate = PhotoCaptureDelegate { [weak self] result in
-                    continuation.resume(with: result.map {
-                        CapturedPhoto(data: $0, orientation: captureOrientation)
-                    })
+                    continuation.resume(with: result)
                     self?.sessionQueue.async {
                         self?.inFlightCaptures[uniqueID] = nil
                     }

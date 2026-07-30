@@ -1,5 +1,3 @@
-import AVFoundation
-import ImageIO
 import Testing
 import UIKit
 @testable import Toruto
@@ -598,26 +596,10 @@ struct CameraViewModelTests {
     }
 
     @Test
-    func capturePhoto_撮影データに向き補正が適用される() async {
-        // 横長（6x4）の撮影データを縦向きへ補正すると 4x6 になる
+    func capturePhoto_撮影データの大きさがそのまま処理に渡る() async {
+        // 向きは EXIF 任せなので、EXIF を持たないデータは縦横がそのまま渡る
         let service = MockCameraService()
         service.captureResult = .success(Self.makeImageData(width: 6, height: 4))
-        service.captureOrientation = .right
-        let processor = MockImageProcessor()
-        let viewModel = makeViewModel(service: service, processor: processor)
-        await viewModel.startSession()
-
-        await viewModel.capturePhoto()
-
-        #expect(processor.lastProcessExtent?.width == 4)
-        #expect(processor.lastProcessExtent?.height == 6)
-    }
-
-    @Test
-    func capturePhoto_向き補正なしなら縦横はそのまま() async {
-        let service = MockCameraService()
-        service.captureResult = .success(Self.makeImageData(width: 6, height: 4))
-        service.captureOrientation = .up
         let processor = MockImageProcessor()
         let viewModel = makeViewModel(service: service, processor: processor)
         await viewModel.startSession()
@@ -626,6 +608,7 @@ struct CameraViewModelTests {
 
         #expect(processor.lastProcessExtent?.width == 6)
         #expect(processor.lastProcessExtent?.height == 4)
+        #expect(viewModel.lastPhotoSize == CGSize(width: 6, height: 4))
     }
 
     @Test

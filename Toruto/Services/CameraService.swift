@@ -1,13 +1,4 @@
 import CoreImage
-import ImageIO
-
-/// 撮影結果。
-/// 画像データはセンサーの生の向きのままなので、表示・保存前に `orientation` を適用する
-struct CapturedPhoto: Sendable {
-    let data: Data
-    /// `data` を縦持ちの表示向きへ揃えるための向き
-    let orientation: CGImagePropertyOrientation
-}
 
 /// カメラ操作で発生するエラー
 enum CameraServiceError: Error {
@@ -38,6 +29,7 @@ protocol CameraService: AnyObject {
     func setExposureBias(_ bias: Float) async throws
     /// フラッシュの ON/OFF を設定する（非対応デバイスでは撮影時に無視される）
     func setFlashEnabled(_ isEnabled: Bool) async
-    /// 静止画を撮影し、画像データと補正すべき向きを返す
-    func capturePhoto() async throws -> CapturedPhoto
+    /// 静止画を撮影し、画像データを返す。
+    /// 向きは AVFoundation が書いた EXIF に入っているため、読み出し側で適用する
+    func capturePhoto() async throws -> Data
 }
