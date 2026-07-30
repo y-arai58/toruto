@@ -1,8 +1,9 @@
 # TASK-014: カスタムプリセット（複製 + 微調整）
 
-- status: in-progress
+- status: done
 - priority: low
 - started_at: 2026-07-30
+- completed_at: 2026-07-30
 
 ## Goal
 
@@ -17,7 +18,7 @@
 - [x] カスタムプリセットは長押しメニューから削除できる（バンドル定義は削除不可）
 - [x] カスタムプリセットは再起動後も保持される（UserDefaults）
 - [x] ViewModel の単体テストがある
-- [ ] swiftc 型チェック通過 + ユーザー環境でテスト通過
+- [x] swiftc 型チェック通過 + ユーザー環境でテスト通過
 
 ## Sub Tasks
 
@@ -36,3 +37,4 @@
 | Date | Action | Note |
 |---|---|---|
 | 2026-07-30 | created | 方式はユーザー確認済み（複製+微調整） |
+| 2026-07-30 | completed | ユーザー環境でテスト通過・PR マージ済み |

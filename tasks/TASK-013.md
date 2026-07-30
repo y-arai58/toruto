@@ -1,8 +1,9 @@
 # TASK-013: 撮影履歴（アルバム参照方式）
 
-- status: in-progress
+- status: done
 - priority: low
 - started_at: 2026-07-30
+- completed_at: 2026-07-30
 
 ## Goal
 
@@ -16,7 +17,7 @@
 - [x] サムネイル/フォトアイコンのタップで履歴シートが開き、アルバムの写真が新しい順に並ぶ
 - [x] 読み取り権限拒否時はシート内に設定導線を表示する
 - [x] HistoryViewModel の単体テストがある
-- [ ] swiftc 型チェック通過 + ユーザー環境でテスト通過
+- [x] swiftc 型チェック通過 + ユーザー環境でテスト通過
 
 ## Sub Tasks
 
@@ -31,3 +32,4 @@
 | Date | Action | Note |
 |---|---|---|
 | 2026-07-30 | created | 方式はユーザー確認済み（アルバム参照） |
+| 2026-07-30 | completed | ユーザー環境でテスト通過・PR マージ済み |

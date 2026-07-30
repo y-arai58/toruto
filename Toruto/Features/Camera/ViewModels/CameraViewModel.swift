@@ -244,9 +244,9 @@ final class CameraViewModel {
         }
     }
 
-    /// バンドル定義 + カスタムを読み込み、表示順を組み立てる
+    /// バンドル定義（全パック） + カスタムを読み込み、表示順を組み立てる
     private func reloadPresets() {
-        let bundled = (try? presetRepository.loadPresets()) ?? []
+        let bundled = ((try? presetRepository.loadPacks()) ?? []).flatMap(\.presets)
         let custom = customPresetStore.loadCustomPresets()
         customPresetIDs = Set(custom.map(\.id))
         orderedPresets = bundled + custom
