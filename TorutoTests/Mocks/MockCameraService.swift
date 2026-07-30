@@ -1,5 +1,6 @@
 import CoreImage
 import Foundation
+import ImageIO
 @testable import Toruto
 
 final class MockCameraService: CameraService {
@@ -11,6 +12,7 @@ final class MockCameraService: CameraService {
     private(set) var lastExposureBias: Float?
     private(set) var lastFlashEnabled: Bool?
     var captureResult: Result<Data, Error> = .failure(CameraServiceError.captureFailed)
+    var captureOrientation: CGImagePropertyOrientation = .right
 
     private(set) var startCallCount = 0
     private(set) var stopCallCount = 0
@@ -71,8 +73,8 @@ final class MockCameraService: CameraService {
         lastFlashEnabled = isEnabled
     }
 
-    func capturePhoto() async throws -> Data {
+    func capturePhoto() async throws -> CapturedPhoto {
         captureCallCount += 1
-        return try captureResult.get()
+        return CapturedPhoto(data: try captureResult.get(), orientation: captureOrientation)
     }
 }

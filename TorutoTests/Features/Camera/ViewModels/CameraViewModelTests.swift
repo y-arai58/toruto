@@ -1,3 +1,5 @@
+import AVFoundation
+import ImageIO
 import Testing
 import UIKit
 @testable import Toruto
@@ -596,6 +598,37 @@ struct CameraViewModelTests {
     }
 
     @Test
+    func capturePhoto_撮影データに向き補正が適用される() async {
+        // 横長（6x4）の撮影データを縦向きへ補正すると 4x6 になる
+        let service = MockCameraService()
+        service.captureResult = .success(Self.makeImageData(width: 6, height: 4))
+        service.captureOrientation = CameraOrientation.portrait(for: .front)
+        let processor = MockImageProcessor()
+        let viewModel = makeViewModel(service: service, processor: processor)
+        await viewModel.startSession()
+
+        await viewModel.capturePhoto()
+
+        #expect(processor.lastProcessExtent?.width == 4)
+        #expect(processor.lastProcessExtent?.height == 6)
+    }
+
+    @Test
+    func capturePhoto_向き補正なしなら縦横はそのまま() async {
+        let service = MockCameraService()
+        service.captureResult = .success(Self.makeImageData(width: 6, height: 4))
+        service.captureOrientation = .up
+        let processor = MockImageProcessor()
+        let viewModel = makeViewModel(service: service, processor: processor)
+        await viewModel.startSession()
+
+        await viewModel.capturePhoto()
+
+        #expect(processor.lastProcessExtent?.width == 6)
+        #expect(processor.lastProcessExtent?.height == 4)
+    }
+
+    @Test
     func capturePhoto_成功時は加工済みデータを保存する() async {
         let service = MockCameraService()
         service.captureResult = .success(Self.makeImageData())
@@ -664,11 +697,13 @@ struct CameraViewModelTests {
         #expect(viewModel.isCapturing == false)
     }
 
-    private static func makeImageData() -> Data {
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4))
+    private static func makeImageData(width: CGFloat = 4, height: CGFloat = 4) -> Data {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format)
         return renderer.pngData { context in
             UIColor.black.setFill()
-            context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+            context.fill(CGRect(x: 0, y: 0, width: width, height: height))
         }
     }
 }
