@@ -79,7 +79,7 @@ final class CameraViewModel {
         loadPresets()
     }
 
-    /// Crop + フィルター適用済みのプレビューフレームを供給する。
+    /// フィルター適用済みの全画角プレビューフレームを供給する（Crop は保存時のみ）。
     /// パラメータはフレームごとに読み直すため、プリセット切替に即時追従する
     func makePreviewStream() -> AsyncStream<CIImage> {
         let source = cameraService.makePreviewStream()
@@ -88,7 +88,7 @@ final class CameraViewModel {
         return AsyncStream { continuation in
             let task = Task.detached {
                 for await frame in source {
-                    continuation.yield(processor.process(frame, with: parameters.value))
+                    continuation.yield(processor.applyFilters(to: frame, with: parameters.value))
                 }
                 continuation.finish()
             }

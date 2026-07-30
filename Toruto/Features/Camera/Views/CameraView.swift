@@ -92,10 +92,12 @@ struct CameraView: View {
         }
     }
 
-    /// 中央フレーム（3:4 固定）。保存領域＝プレビュー領域として明示する
+    /// 全画角プレビュー（3:4）。中央フレーム（保存される領域）の外側を暗く表示する
     private var previewFrame: some View {
         ZStack {
             CameraPreviewView(makeFrames: viewModel.makePreviewStream)
+
+            frameOverlay
 
             statusOverlay
 
@@ -113,11 +115,30 @@ struct CameraView: View {
         }
         .aspectRatio(3 / 4, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 4))
-        .overlay(
-            RoundedRectangle(cornerRadius: 4)
-                .strokeBorder(.white.opacity(0.25), lineWidth: 1)
-        )
         .frame(maxHeight: .infinity)
+    }
+
+    /// 保存されない領域の暗幕 + 保存フレームの枠線
+    private var frameOverlay: some View {
+        GeometryReader { geometry in
+            let frame = CameraFrame.rect(in: geometry.size)
+            ZStack {
+                Path { path in
+                    path.addRect(CGRect(origin: .zero, size: geometry.size))
+                    path.addRoundedRect(
+                        in: frame,
+                        cornerSize: CGSize(width: 4, height: 4)
+                    )
+                }
+                .fill(Color.black.opacity(0.55), style: FillStyle(eoFill: true))
+
+                RoundedRectangle(cornerRadius: 4)
+                    .strokeBorder(.white.opacity(0.6), lineWidth: 1)
+                    .frame(width: frame.width, height: frame.height)
+                    .position(x: frame.midX, y: frame.midY)
+            }
+        }
+        .allowsHitTesting(false)
     }
 
     @ViewBuilder
