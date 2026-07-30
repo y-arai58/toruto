@@ -11,8 +11,8 @@ final class DefaultImageProcessor: ImageProcessor, @unchecked Sendable {
         self.ciContext = ciContext
     }
 
-    func process(_ image: CIImage, with parameters: FilterParameters) -> CIImage {
-        let cropped = cropToCenterFrame(image)
+    func process(_ image: CIImage, with parameters: FilterParameters, frameScale: CGFloat) -> CIImage {
+        let cropped = cropToCenterFrame(image, scale: frameScale)
         return applyFilters(to: cropped, with: parameters)
     }
 
@@ -68,12 +68,13 @@ final class DefaultImageProcessor: ImageProcessor, @unchecked Sendable {
         return formatter
     }()
 
-    /// 中央フレーム（3:4・視野の 80%）で切り出し、原点を (0, 0) に揃える
-    private func cropToCenterFrame(_ image: CIImage) -> CIImage {
+    /// 中央フレーム（3:4・指定スケール）で切り出し、原点を (0, 0) に揃える。
+    /// スケールの妥当性（レンズ別範囲）は ViewModel 側で担保する
+    private func cropToCenterFrame(_ image: CIImage, scale: CGFloat) -> CIImage {
         let rect = CropCalculator.centeredCropRect(
             in: image.extent,
             aspectRatio: CameraFrame.aspectRatio,
-            scale: CameraFrame.scale
+            scale: min(max(scale, 0.01), 1)
         )
         guard !rect.isEmpty else { return image }
         return image
