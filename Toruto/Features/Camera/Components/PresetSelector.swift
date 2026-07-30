@@ -5,8 +5,11 @@ struct PresetSelector: View {
     let presets: [CameraPreset]
     let currentPreset: CameraPreset?
     let isFavorite: (CameraPreset) -> Bool
+    let isCustom: (CameraPreset) -> Bool
     let onSelect: (CameraPreset) -> Void
     let onToggleFavorite: (CameraPreset) -> Void
+    let onCustomize: (CameraPreset) -> Void
+    let onDelete: (CameraPreset) -> Void
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -48,14 +51,33 @@ struct PresetSelector: View {
         .onTapGesture {
             onSelect(preset)
         }
-        .onLongPressGesture(minimumDuration: 0.4) {
-            onToggleFavorite(preset)
+        .contextMenu {
+            Button {
+                onToggleFavorite(preset)
+            } label: {
+                Label(
+                    isFavorite(preset) ? "お気に入りを解除" : "お気に入りに登録",
+                    systemImage: isFavorite(preset) ? "star.slash" : "star"
+                )
+            }
+            Button {
+                onCustomize(preset)
+            } label: {
+                Label("複製して調整", systemImage: "slider.horizontal.3")
+            }
+            if isCustom(preset) {
+                Button(role: .destructive) {
+                    onDelete(preset)
+                } label: {
+                    Label("削除", systemImage: "trash")
+                }
+            }
         }
         .id(preset.id)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(preset.displayName)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-        .accessibilityHint("長押しでお気に入りを切り替え")
+        .accessibilityHint("長押しでお気に入り・カスタマイズのメニューを開く")
     }
 }
 
@@ -69,8 +91,11 @@ struct PresetSelector: View {
             ],
             currentPreset: nil,
             isFavorite: { $0.id == "ccd" },
+            isCustom: { _ in false },
             onSelect: { _ in },
-            onToggleFavorite: { _ in }
+            onToggleFavorite: { _ in },
+            onCustomize: { _ in },
+            onDelete: { _ in }
         )
     }
 }

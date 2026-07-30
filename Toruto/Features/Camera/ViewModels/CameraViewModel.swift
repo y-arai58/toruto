@@ -27,10 +27,18 @@ final class CameraViewModel {
     private(set) var isDateStampEnabled = false
     private(set) var shutterSound: ShutterSound = .classic
     private(set) var lastCapturedImage: UIImage?
+    /// カスタムプリセット作成中の下書き
+    struct PresetDraft: Equatable {
+        var name: String
+        var parameters: FilterParameters
+    }
+
     /// 表示順のプリセット一覧（お気に入りが先頭、それ以外は定義順）
     private(set) var presets: [CameraPreset] = []
     private(set) var currentPreset: CameraPreset?
     private(set) var favoritePresetIDs: Set<String> = []
+    private(set) var customPresetIDs: Set<String> = []
+    private(set) var draft: PresetDraft?
     private(set) var saveError: SaveError?
 
     private let cameraService: any CameraService
@@ -40,6 +48,7 @@ final class CameraViewModel {
     private let favoriteStore: any FavoriteStore
     private let settingsStore: any SettingsStore
     private let shutterSoundPlayer: any ShutterSoundPlayer
+    private let customPresetStore: any CustomPresetStore
     /// presets.json の定義順
     private var orderedPresets: [CameraPreset] = []
     /// プレビュー処理タスク（非 MainActor）と共有するフィルターパラメータ
@@ -52,7 +61,8 @@ final class CameraViewModel {
         photoLibraryService: (any PhotoLibraryService)? = nil,
         favoriteStore: (any FavoriteStore)? = nil,
         settingsStore: (any SettingsStore)? = nil,
-        shutterSoundPlayer: (any ShutterSoundPlayer)? = nil
+        shutterSoundPlayer: (any ShutterSoundPlayer)? = nil,
+        customPresetStore: (any CustomPresetStore)? = nil
     ) {
         self.cameraService = cameraService ?? DefaultCameraService()
         self.imageProcessor = imageProcessor ?? DefaultImageProcessor()
@@ -61,6 +71,7 @@ final class CameraViewModel {
         self.favoriteStore = favoriteStore ?? UserDefaultsFavoriteStore()
         self.settingsStore = settingsStore ?? UserDefaultsSettingsStore()
         self.shutterSoundPlayer = shutterSoundPlayer ?? SystemShutterSoundPlayer()
+        self.customPresetStore = customPresetStore ?? UserDefaultsCustomPresetStore()
         isDateStampEnabled = self.settingsStore.isDateStampEnabled
         shutterSound = self.settingsStore.shutterSound
         loadPresets()
@@ -104,6 +115,53 @@ final class CameraViewModel {
 
     func isFavorite(_ preset: CameraPreset) -> Bool {
         favoritePresetIDs.contains(preset.id)
+    }
+
+    func isCustom(_ preset: CameraPreset) -> Bool {
+        customPresetIDs.contains(preset.id)
+    }
+
+    /// 複製元を指定してカスタムプリセットの編集を開始する。調整値はプレビューへ即時反映される
+    func beginCustomizing(from preset: CameraPreset) {
+        draft = PresetDraft(name: "\(preset.displayName) +", parameters: preset.filterParameters)
+        previewParameters.value = preset.filterParameters
+    }
+
+    func updateDraftParameters(_ parameters: FilterParameters) {
+        guard draft != nil else { return }
+        draft?.parameters = parameters
+        previewParameters.value = parameters
+    }
+
+    /// 下書きを保存して選択状態にする
+    func saveDraft(name: String) {
+        guard let draft else { return }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let preset = CameraPreset(
+            id: "custom_\(UUID().uuidString)",
+            displayName: trimmed.isEmpty ? draft.name : trimmed,
+            filterParameters: draft.parameters
+        )
+        customPresetStore.add(preset)
+        self.draft = nil
+        reloadPresets()
+        selectPreset(preset)
+    }
+
+    /// 下書きを破棄してプレビューを現在のプリセットに戻す
+    func cancelDraft() {
+        draft = nil
+        previewParameters.value = currentPreset?.filterParameters ?? FilterParameters()
+    }
+
+    func deleteCustomPreset(_ preset: CameraPreset) {
+        guard isCustom(preset) else { return }
+        customPresetStore.delete(id: preset.id)
+        favoriteStore.setFavorite(preset.id, isFavorite: false)
+        reloadPresets()
+        if currentPreset?.id == preset.id, let first = presets.first {
+            selectPreset(first)
+        }
     }
 
     func switchCamera() async {
@@ -180,12 +238,20 @@ final class CameraViewModel {
     }
 
     private func loadPresets() {
-        orderedPresets = (try? presetRepository.loadPresets()) ?? []
-        favoritePresetIDs = favoriteStore.favoriteIDs()
-        presets = sortedForDisplay(orderedPresets)
+        reloadPresets()
         if let first = presets.first {
             selectPreset(first)
         }
+    }
+
+    /// バンドル定義 + カスタムを読み込み、表示順を組み立てる
+    private func reloadPresets() {
+        let bundled = (try? presetRepository.loadPresets()) ?? []
+        let custom = customPresetStore.loadCustomPresets()
+        customPresetIDs = Set(custom.map(\.id))
+        orderedPresets = bundled + custom
+        favoritePresetIDs = favoriteStore.favoriteIDs()
+        presets = sortedForDisplay(orderedPresets)
     }
 
     /// お気に入りを先頭に、それ以外は定義順のまま並べる（安定ソート）
