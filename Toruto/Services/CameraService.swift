@@ -18,8 +18,12 @@ protocol CameraService: AnyObject {
     func start() async throws
     /// セッションを停止する
     func stop() async
-    /// 前面/背面カメラを切り替える
+    /// 前面/背面カメラを切り替える（レンズは wide にリセットされる）
     func switchCamera() async throws
+    /// 現在のカメラ位置で利用可能なレンズを返す（前面は wide のみ）
+    func availableLenses() async -> [CameraLens]
+    /// レンズを切り替える（背面のみ）
+    func selectLens(_ lens: CameraLens) async throws
     /// 露出補正（EV）を設定する。デバイスの対応範囲にクランプされる
     func setExposureBias(_ bias: Float) async throws
     /// フラッシュの ON/OFF を設定する（非対応デバイスでは撮影時に無視される）
