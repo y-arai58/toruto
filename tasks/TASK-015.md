@@ -1,8 +1,9 @@
 # TASK-015: 新しいカメラパックの追加
 
-- status: in-progress
+- status: done
 - priority: low
 - started_at: 2026-07-30
+- completed_at: 2026-07-30
 
 ## Goal
 
@@ -16,7 +17,7 @@
 - [x] Mono Pack（Mono / Mono Hard / Mono Film）が追加されている
 - [x] 一覧表示・お気に入り・カスタム複製など既存機能がそのまま動く
 - [x] Repository / ViewModel の単体テストがある
-- [ ] swiftc 型チェック通過 + ユーザー環境でテスト通過
+- [x] swiftc 型チェック通過 + ユーザー環境でテスト通過
 
 ## Sub Tasks
 
@@ -34,3 +35,4 @@
 | Date | Action | Note |
 |---|---|---|
 | 2026-07-30 | created | Phase 3 として開始 |
+| 2026-07-30 | completed | 実機で動作確認済み |
