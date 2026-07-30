@@ -1,5 +1,18 @@
 # Lessons
 
+## 2026-07-30: AVCaptureConnection の向き設定に頼らない（TASK-024）
+
+- `AVCaptureConnection` への `videoRotationAngle` / `isVideoMirrored` は、
+  入力を張り替えた直後だと接続が取れなかったり回転角が非対応だったりして、
+  **エラーも警告もなく適用されない**ことがある
+- `guard let connection else { continue }` と `if isVideoRotationAngleSupported`
+  の組み合わせは、失敗を 2 段構えで握りつぶすので特に危険
+- 向きの補正は `CIImage.oriented(_:)` でコード側の一箇所に集約する。
+  AVFoundation の挙動に依存しなくなり、単体テストも書ける
+- 下の TASK-019 の教訓（commit 後に設定する）は**この不具合の原因ではなかった**。
+  症状が 1 ミリも変わらないときは、タイミングではなく
+  「そもそも届いているか」を疑うこと
+
 ## 2026-07-30: AVCaptureSession の入力付け替え後の接続設定は commit 後に行う
 
 - `beginConfiguration` 中に入力を付け替えた場合、新しい入力と出力の接続
