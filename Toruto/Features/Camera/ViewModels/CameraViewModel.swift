@@ -25,6 +25,8 @@ final class CameraViewModel {
     private(set) var exposureBias: Double = 0
     private(set) var isFlashEnabled = false
     private(set) var isDateStampEnabled = false
+    private(set) var availableLenses: [CameraLens] = []
+    private(set) var currentLens: CameraLens = .wide
     private(set) var shutterSound: ShutterSound = .classic
     private(set) var lastCapturedImage: UIImage?
     /// カスタムプリセット作成中の下書き
@@ -170,6 +172,19 @@ final class CameraViewModel {
         defer { isSwitchingCamera = false }
         // 失敗時は現在のカメラのまま継続する
         try? await cameraService.switchCamera()
+        // 位置が変わるとレンズは wide に戻る
+        currentLens = .wide
+        availableLenses = await cameraService.availableLenses()
+    }
+
+    func selectLens(_ lens: CameraLens) async {
+        guard status == .running, availableLenses.contains(lens), lens != currentLens else { return }
+        do {
+            try await cameraService.selectLens(lens)
+            currentLens = lens
+        } catch {
+            // 失敗時は現在のレンズのまま継続する
+        }
     }
 
     func toggleFlash() async {
@@ -200,6 +215,7 @@ final class CameraViewModel {
         do {
             try await cameraService.start()
             status = .running
+            availableLenses = await cameraService.availableLenses()
         } catch CameraServiceError.permissionDenied {
             status = .permissionDenied
         } catch {

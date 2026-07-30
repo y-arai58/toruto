@@ -99,6 +99,14 @@ struct CameraView: View {
 
             statusOverlay
 
+            if viewModel.availableLenses.count > 1 {
+                VStack {
+                    Spacer()
+                    lensSelector
+                        .padding(.bottom, 12)
+                }
+            }
+
             Color.white
                 .opacity(isFlashing ? 0.8 : 0)
                 .allowsHitTesting(false)
@@ -203,6 +211,27 @@ struct CameraView: View {
             }
         }
         .padding(.horizontal, 24)
+    }
+
+    private var lensSelector: some View {
+        HStack(spacing: 4) {
+            ForEach(viewModel.availableLenses, id: \.self) { lens in
+                let isSelected = lens == viewModel.currentLens
+                Button {
+                    Task { await viewModel.selectLens(lens) }
+                } label: {
+                    Text(lens.displayName)
+                        .font(.caption2.weight(isSelected ? .bold : .regular))
+                        .foregroundStyle(isSelected ? .yellow : .white)
+                        .frame(width: 36, height: 36)
+                        .background(.black.opacity(isSelected ? 0.6 : 0.35), in: Circle())
+                }
+                .accessibilityLabel("レンズ \(lens.displayName)")
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
+        .padding(4)
+        .background(.black.opacity(0.2), in: Capsule())
     }
 
     private var exposureSlider: some View {
