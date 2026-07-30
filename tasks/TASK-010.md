@@ -1,8 +1,9 @@
 # TASK-010: 日付スタンプ
 
-- status: in-progress
+- status: done
 - priority: medium
 - started_at: 2026-07-30
+- completed_at: 2026-07-30
 
 ## Goal
 
@@ -15,7 +16,7 @@ ON/OFF はトグルで切り替えられる。
 - [x] スタンプは画像サイズに応じてスケールする（解像度によらず同じ見た目）
 - [x] ON/OFF はアプリ再起動後も保持される（UserDefaults）
 - [x] ImageProcessor / ViewModel の単体テストがある
-- [ ] swiftc 型チェック通過 + ユーザー環境でテスト通過
+- [x] swiftc 型チェック通過 + ユーザー環境でテスト通過
 
 ## Sub Tasks
 
@@ -29,3 +30,4 @@ ON/OFF はトグルで切り替えられる。
 | Date | Action | Note |
 |---|---|---|
 | 2026-07-30 | created | Phase 2 として開始 |
+| 2026-07-30 | completed | ユーザー環境でテスト通過・PR マージ済み |

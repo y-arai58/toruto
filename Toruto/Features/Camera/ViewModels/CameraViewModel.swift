@@ -83,6 +83,13 @@ final class CameraViewModel {
         previewParameters.value = preset.filterParameters
     }
 
+    /// 現在と異なるプリセットをランダムに選ぶ（1 つしかない場合はそのまま）
+    func selectRandomPreset() {
+        let candidates = presets.filter { $0.id != currentPreset?.id }
+        guard let preset = candidates.randomElement() else { return }
+        selectPreset(preset)
+    }
+
     func toggleFavorite(_ preset: CameraPreset) {
         let isFavorite = !favoritePresetIDs.contains(preset.id)
         favoriteStore.setFavorite(preset.id, isFavorite: isFavorite)

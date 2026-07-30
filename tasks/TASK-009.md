@@ -1,8 +1,9 @@
 # TASK-009: フラッシュエフェクト
 
-- status: in-progress
+- status: done
 - priority: medium
 - started_at: 2026-07-30
+- completed_at: 2026-07-30
 
 ## Goal
 
@@ -15,7 +16,7 @@
 - [x] ON のとき背面撮影で実フラッシュが発光する（対応デバイスのみ）
 - [x] ON のときスクリーンフラッシュ演出が強くなる（前面でも効果がある）
 - [x] ViewModel の単体テストがある
-- [ ] swiftc 型チェック通過 + ユーザー環境でテスト通過
+- [x] swiftc 型チェック通過 + ユーザー環境でテスト通過
 
 ## Sub Tasks
 
@@ -29,3 +30,4 @@
 | Date | Action | Note |
 |---|---|---|
 | 2026-07-30 | created | Phase 2 として開始 |
+| 2026-07-30 | completed | ユーザー環境でテスト通過・PR マージ済み |

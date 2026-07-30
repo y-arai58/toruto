@@ -1,8 +1,9 @@
 # TASK-008: お気に入り登録
 
-- status: in-progress
+- status: done
 - priority: medium
 - started_at: 2026-07-30
+- completed_at: 2026-07-30
 
 ## Goal
 
@@ -14,7 +15,7 @@
 - [x] お気に入りは星マークで表示され、一覧の先頭に並ぶ（それ以外は定義順を維持）
 - [x] お気に入りはアプリ再起動後も保持される（UserDefaults）
 - [x] ViewModel の単体テストがある
-- [ ] swiftc 型チェック通過 + ユーザー環境でテスト通過
+- [x] swiftc 型チェック通過 + ユーザー環境でテスト通過
 
 ## Sub Tasks
 
@@ -28,3 +29,4 @@
 | Date | Action | Note |
 |---|---|---|
 | 2026-07-30 | created | Phase 2 として開始 |
+| 2026-07-30 | completed | ユーザー環境でテスト通過・PR マージ済み |

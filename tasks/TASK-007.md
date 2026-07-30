@@ -1,8 +1,9 @@
 # TASK-007: 撮影パラメータの調整（露出補正）
 
-- status: in-progress
+- status: done
 - priority: medium
 - started_at: 2026-07-30
+- completed_at: 2026-07-30
 
 ## Goal
 
@@ -15,7 +16,7 @@
 - [x] 太陽アイコンのトグルで露出スライダーを表示/非表示できる
 - [x] カメラ切替後も露出補正値が維持される
 - [x] ViewModel の単体テストがある
-- [ ] swiftc 型チェック通過 + ユーザー環境でテスト通過
+- [x] swiftc 型チェック通過 + ユーザー環境でテスト通過
 
 ## Sub Tasks
 
@@ -33,3 +34,4 @@
 | Date | Action | Note |
 |---|---|---|
 | 2026-07-30 | created | Phase 2 として開始 |
+| 2026-07-30 | completed | ユーザー環境でテスト通過・PR マージ済み |

@@ -136,6 +136,16 @@ struct CameraView: View {
                 Spacer()
 
                 Button {
+                    viewModel.selectRandomPreset()
+                } label: {
+                    Image(systemName: "dice")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.7))
+                        .frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("ランダムなカメラを選ぶ")
+
+                Button {
                     viewModel.toggleDateStamp()
                 } label: {
                     Image(systemName: viewModel.isDateStampEnabled ? "calendar.badge.checkmark" : "calendar")

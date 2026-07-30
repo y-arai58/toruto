@@ -170,6 +170,34 @@ struct CameraViewModelTests {
     }
 
     @Test
+    func selectRandomPreset_現在と異なるプリセットが選ばれる() {
+        let repository = MockPresetRepository(presets: [
+            CameraPreset(id: "a", displayName: "A", filterParameters: FilterParameters()),
+            CameraPreset(id: "b", displayName: "B", filterParameters: FilterParameters()),
+        ])
+        let viewModel = makeViewModel(repository: repository)
+        #expect(viewModel.currentPreset?.id == "a")
+
+        for _ in 0..<10 {
+            let before = viewModel.currentPreset?.id
+            viewModel.selectRandomPreset()
+            #expect(viewModel.currentPreset?.id != before)
+        }
+    }
+
+    @Test
+    func selectRandomPreset_プリセットが1つなら変わらない() {
+        let repository = MockPresetRepository(presets: [
+            CameraPreset(id: "a", displayName: "A", filterParameters: FilterParameters()),
+        ])
+        let viewModel = makeViewModel(repository: repository)
+
+        viewModel.selectRandomPreset()
+
+        #expect(viewModel.currentPreset?.id == "a")
+    }
+
+    @Test
     func toggleFavorite_登録するとストアへ保存され先頭に並ぶ() {
         let presetC = CameraPreset(id: "c", displayName: "C", filterParameters: FilterParameters())
         let repository = MockPresetRepository(presets: [

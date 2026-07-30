@@ -1,8 +1,9 @@
 # TASK-006: カメラ追加（CCD / Film / Compact バリエーション）
 
-- status: in-progress
+- status: done
 - priority: medium
 - started_at: 2026-07-30
+- completed_at: 2026-07-30
 
 ## Goal
 
@@ -14,7 +15,7 @@ TASK-002 で作った「JSON 追加だけで増やせる」構造の実証も兼
 - [x] CCD / Film / Compact 系のバリエーションが 3 つ追加されている（計 9）
 - [x] コード変更は不要（presets.json とテストの期待値のみ）
 - [x] 既存プリセットと重複しない画作りになっている
-- [ ] swiftc 型チェック通過 + ユーザー環境でテスト通過
+- [x] swiftc 型チェック通過 + ユーザー環境でテスト通過
 
 ## Sub Tasks
 
@@ -26,3 +27,4 @@ TASK-002 で作った「JSON 追加だけで増やせる」構造の実証も兼
 | Date | Action | Note |
 |---|---|---|
 | 2026-07-30 | created | Phase 2 開始 |
+| 2026-07-30 | completed | ユーザー環境でテスト通過・PR マージ済み |
