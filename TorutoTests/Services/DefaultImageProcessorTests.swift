@@ -1,4 +1,5 @@
 import CoreImage
+import Foundation
 import Testing
 @testable import Toruto
 
@@ -41,6 +42,16 @@ struct DefaultImageProcessorTests {
         #expect(!data.isEmpty)
         // HEIC 非対応環境でも JPEG フォールバックで CIImage として読み戻せる
         #expect(CIImage(data: data) != nil)
+    }
+
+    @Test
+    func stampDateで日付を焼き込んでもextentが変わらない() throws {
+        let source = processor.process(makeImage(width: 300, height: 400), with: FilterParameters())
+        let stamped = processor.stampDate(Date(timeIntervalSince1970: 1_800_000_000), on: source)
+
+        #expect(stamped.extent == source.extent)
+        // 焼き込み後も描画可能であること
+        #expect(processor.renderCGImage(from: stamped) != nil)
     }
 
     @Test

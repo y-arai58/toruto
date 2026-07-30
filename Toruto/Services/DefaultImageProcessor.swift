@@ -39,6 +39,38 @@ final class DefaultImageProcessor: ImageProcessor, @unchecked Sendable {
         return ciContext.jpegRepresentation(of: image, colorSpace: colorSpace, options: quality)
     }
 
+    func stampDate(_ date: Date, on image: CIImage) -> CIImage {
+        let generator = CIFilter.textImageGenerator()
+        generator.text = Self.stampFormatter.string(from: date)
+        generator.fontName = "Courier-Bold"
+        generator.fontSize = Float(image.extent.height * 0.032)
+        generator.scaleFactor = 1
+        guard let textImage = generator.outputImage else { return image }
+
+        // フィルムカメラ風のオレンジに着色（白文字を乗算）
+        let orange = textImage.applyingFilter("CIColorMatrix", parameters: [
+            "inputRVector": CIVector(x: 1.0, y: 0, z: 0, w: 0),
+            "inputGVector": CIVector(x: 0, y: 0.58, z: 0, w: 0),
+            "inputBVector": CIVector(x: 0, y: 0, z: 0.16, w: 0),
+            "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 0.9),
+        ])
+
+        let padding = image.extent.height * 0.04
+        let positioned = orange.transformed(by: CGAffineTransform(
+            translationX: image.extent.maxX - orange.extent.width - padding - orange.extent.minX,
+            y: image.extent.minY + padding - orange.extent.minY
+        ))
+        return positioned.composited(over: image).cropped(to: image.extent)
+    }
+
+    /// フィルムカメラの日付焼き込み風（例: '26 7 30）
+    private static let stampFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "''yy M d"
+        return formatter
+    }()
+
     /// 中央 3:4 で切り出し、原点を (0, 0) に揃える
     private func cropToCenterFrame(_ image: CIImage) -> CIImage {
         let rect = CropCalculator.centeredCropRect(in: image.extent, aspectRatio: Self.frameAspectRatio)
