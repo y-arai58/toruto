@@ -12,6 +12,7 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
     private let videoQueue = DispatchQueue(label: "com.thirdscope.toruto.camera.video")
     private var isConfigured = false
     private var position: AVCaptureDevice.Position = .back
+    private var lens: CameraLens = .wide
     private var currentInput: AVCaptureDeviceInput?
     private var exposureBias: Float = 0
     private var isFlashEnabled = false
@@ -82,7 +83,42 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             sessionQueue.async {
                 do {
-                    try self.reconfigureInput(to: self.position == .back ? .front : .back)
+                    try self.reconfigureInput(
+                        to: self.position == .back ? .front : .back,
+                        lens: .wide
+                    )
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    func availableLenses() async -> [CameraLens] {
+        await withCheckedContinuation { continuation in
+            sessionQueue.async {
+                guard self.position == .back else {
+                    continuation.resume(returning: [.wide])
+                    return
+                }
+                let lenses = CameraLens.allCases.filter { lens in
+                    AVCaptureDevice.default(Self.deviceType(for: lens), for: .video, position: .back) != nil
+                }
+                continuation.resume(returning: lenses)
+            }
+        }
+    }
+
+    func selectLens(_ lens: CameraLens) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            sessionQueue.async {
+                guard self.position == .back else {
+                    continuation.resume(throwing: CameraServiceError.deviceUnavailable)
+                    return
+                }
+                do {
+                    try self.reconfigureInput(to: .back, lens: lens)
                     continuation.resume()
                 } catch {
                     continuation.resume(throwing: error)
@@ -147,7 +183,7 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
 
         session.sessionPreset = .photo
 
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position),
+        guard let device = AVCaptureDevice.default(Self.deviceType(for: lens), for: .video, position: position),
               let input = try? AVCaptureDeviceInput(device: device),
               session.canAddInput(input) else {
             throw CameraServiceError.deviceUnavailable
@@ -170,8 +206,8 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         isConfigured = true
     }
 
-    /// sessionQueue 上で呼ぶこと。入力を指定位置のカメラへ付け替える
-    private func reconfigureInput(to newPosition: AVCaptureDevice.Position) throws {
+    /// sessionQueue 上で呼ぶこと。入力を指定位置・指定レンズのカメラへ付け替える
+    private func reconfigureInput(to newPosition: AVCaptureDevice.Position, lens newLens: CameraLens) throws {
         guard isConfigured else { throw CameraServiceError.configurationFailed }
 
         session.beginConfiguration()
@@ -180,7 +216,7 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         if let currentInput {
             session.removeInput(currentInput)
         }
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: newPosition),
+        guard let device = AVCaptureDevice.default(Self.deviceType(for: newLens), for: .video, position: newPosition),
               let input = try? AVCaptureDeviceInput(device: device),
               session.canAddInput(input) else {
             // 失敗時は元の入力に戻す
@@ -193,9 +229,18 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         session.addInput(input)
         currentInput = input
         position = newPosition
+        lens = newLens
         updateConnections()
         // 切替後も露出補正を維持する
         try? applyExposureBias()
+    }
+
+    private static func deviceType(for lens: CameraLens) -> AVCaptureDevice.DeviceType {
+        switch lens {
+        case .ultraWide: .builtInUltraWideCamera
+        case .wide: .builtInWideAngleCamera
+        case .telephoto: .builtInTelephotoCamera
+        }
     }
 
     /// sessionQueue 上で呼ぶこと。現在の入力デバイスに露出補正を適用する
