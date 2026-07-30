@@ -5,6 +5,7 @@ struct CameraView: View {
     @State private var isFlashing = false
     @State private var isExposureVisible = false
     @State private var exposureValue = 0.0
+    @State private var isHistoryPresented = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
 
@@ -64,6 +65,9 @@ struct CameraView: View {
         }
         .sensoryFeedback(.selection, trigger: viewModel.currentPreset?.id)
         .sensoryFeedback(.impact(weight: .light), trigger: viewModel.favoritePresetIDs)
+        .sheet(isPresented: $isHistoryPresented) {
+            HistoryView()
+        }
     }
 
     /// 中央フレーム（3:4 固定）。保存領域＝プレビュー領域として明示する
@@ -280,18 +284,27 @@ struct CameraView: View {
         .accessibilityLabel("カメラを切り替え")
     }
 
-    @ViewBuilder
+    /// 直近の撮影サムネイル。タップで撮影履歴を開く
     private var capturedThumbnail: some View {
-        if let image = viewModel.lastCapturedImage {
-            Image(uiImage: image)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 48, height: 48)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .transition(.scale.combined(with: .opacity))
-        } else {
-            Color.clear
+        Button {
+            isHistoryPresented = true
+        } label: {
+            if let image = viewModel.lastCapturedImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 48, height: 48)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .transition(.scale.combined(with: .opacity))
+            } else {
+                Image(systemName: "photo.on.rectangle")
+                    .font(.title3)
+                    .foregroundStyle(.white.opacity(0.7))
+                    .frame(width: 48, height: 48)
+                    .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+            }
         }
+        .accessibilityLabel("撮影履歴を開く")
     }
 
     private func capture() {

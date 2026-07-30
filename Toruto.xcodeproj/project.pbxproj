@@ -325,6 +325,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "撮影のためにカメラを使用します。";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "撮影した写真を保存するために使用します。";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "撮影履歴の表示とTorutoアルバムへの保存に使用します。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -351,6 +352,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "撮影のためにカメラを使用します。";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "撮影した写真を保存するために使用します。";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "撮影履歴の表示とTorutoアルバムへの保存に使用します。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
