@@ -1,5 +1,6 @@
 import AVFoundation
 import CoreImage
+import ImageIO
 
 /// AVCaptureSession を用いた CameraService の標準実装。
 /// セッション操作はすべて sessionQueue 上で行う。
@@ -16,6 +17,8 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
     private var currentInput: AVCaptureDeviceInput?
     private var exposureBias: Float = 0
     private var isFlashEnabled = false
+    /// 生バッファに適用する表示向き。videoQueue から読むためロックで保護する
+    private let orientation = LockedValue(CameraOrientation.portrait(for: .back))
 
     private let continuationsLock = NSLock()
     private var frameContinuations: [UUID: AsyncStream<CIImage>.Continuation] = [:]
@@ -150,8 +153,8 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         }
     }
 
-    func capturePhoto() async throws -> Data {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
+    func capturePhoto() async throws -> CapturedPhoto {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CapturedPhoto, Error>) in
             sessionQueue.async {
                 guard self.session.isRunning else {
                     continuation.resume(throwing: CameraServiceError.captureFailed)
@@ -161,9 +164,13 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
                 if self.isFlashEnabled, self.photoOutput.supportedFlashModes.contains(.on) {
                     settings.flashMode = .on
                 }
+                // 撮影中にカメラを切り替えられても、この撮影の向きは確定させておく
+                let captureOrientation = CameraOrientation.portrait(for: self.position)
                 let uniqueID = settings.uniqueID
                 let delegate = PhotoCaptureDelegate { [weak self] result in
-                    continuation.resume(with: result)
+                    continuation.resume(with: result.map {
+                        CapturedPhoto(data: $0, orientation: captureOrientation)
+                    })
                     self?.sessionQueue.async {
                         self?.inFlightCaptures[uniqueID] = nil
                     }
@@ -202,13 +209,14 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         session.addOutput(videoOutput)
         session.addOutput(photoOutput)
 
-        updateConnections()
+        resetConnectionTransforms()
+        updateOrientation()
         isConfigured = true
     }
 
     /// sessionQueue 上で呼ぶこと。入力を指定位置・指定レンズのカメラへ付け替える。
-    /// 付け替えた入力と出力の接続は commitConfiguration で確定するため、
-    /// 回転・ミラー・露出の適用は必ず commit の後に行う
+    /// 向きの補正はコード側（CameraOrientation）で行うため、
+    /// ここでは接続の変換を無効のまま保ち、表示向きだけを更新する
     private func reconfigureInput(to newPosition: AVCaptureDevice.Position, lens newLens: CameraLens) throws {
         guard isConfigured else { throw CameraServiceError.configurationFailed }
 
@@ -225,7 +233,8 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
                 session.addInput(currentInput)
             }
             session.commitConfiguration()
-            updateConnections()
+            resetConnectionTransforms()
+            updateOrientation()
             throw CameraServiceError.deviceUnavailable
         }
         session.addInput(input)
@@ -234,7 +243,8 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         lens = newLens
         session.commitConfiguration()
 
-        updateConnections()
+        resetConnectionTransforms()
+        updateOrientation()
         // 切替後も露出補正を維持する
         try? applyExposureBias()
     }
@@ -262,16 +272,24 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         }
     }
 
-    /// sessionQueue 上で呼ぶこと。ポートレート固定 + 前面カメラはミラー表示
-    private func updateConnections() {
+    /// sessionQueue 上で呼ぶこと。現在のカメラ位置に対応する表示向きを反映する
+    private func updateOrientation() {
+        orientation.value = CameraOrientation.portrait(for: position)
+    }
+
+    /// sessionQueue 上で呼ぶこと。
+    /// 接続側の回転・ミラーを無効に固定し、向きの補正を CameraOrientation の一箇所に集約する。
+    /// 接続への設定は入力を張り替えると黙って落ちることがあるため、
+    /// ここでの設定が効かなくても表示向きは壊れない（無効が既定値と同じため）
+    private func resetConnectionTransforms() {
         for connection in [videoOutput.connection(with: .video), photoOutput.connection(with: .video)] {
             guard let connection else { continue }
-            if connection.isVideoRotationAngleSupported(90) {
-                connection.videoRotationAngle = 90
+            if connection.isVideoRotationAngleSupported(0) {
+                connection.videoRotationAngle = 0
             }
             if connection.isVideoMirroringSupported {
                 connection.automaticallyAdjustsVideoMirroring = false
-                connection.isVideoMirrored = (position == .front)
+                connection.isVideoMirrored = false
             }
         }
     }
@@ -284,7 +302,8 @@ extension DefaultCameraService: AVCaptureVideoDataOutputSampleBufferDelegate {
         from connection: AVCaptureConnection
     ) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        let image = CIImage(cvPixelBuffer: pixelBuffer)
+        // 生バッファは横向きで届く。縦持ちの表示向きへここで揃える
+        let image = CIImage(cvPixelBuffer: pixelBuffer).oriented(orientation.value)
         continuationsLock.lock()
         let continuations = Array(frameContinuations.values)
         continuationsLock.unlock()

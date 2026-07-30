@@ -266,8 +266,8 @@ final class CameraViewModel {
         defer { isCapturing = false }
         shutterSoundPlayer.play()
         do {
-            let data = try await cameraService.capturePhoto()
-            guard let processed = processCapturedPhoto(data) else {
+            let photo = try await cameraService.capturePhoto()
+            guard let processed = processCapturedPhoto(photo) else {
                 saveError = .failed
                 return
             }
@@ -304,14 +304,18 @@ final class CameraViewModel {
         return favorites + others
     }
 
-    /// 撮影データにプレビューと同じ Crop + フィルターを適用し、
-    /// サムネイル用 CGImage と保存用データを生成する
-    private func processCapturedPhoto(_ data: Data) -> (cgImage: CGImage, data: Data)? {
-        guard let source = CIImage(data: data, options: [.applyOrientationProperty: true]) else {
+    /// 撮影データにプレビューと同じ向き補正 + Crop + フィルターを適用し、
+    /// サムネイル用 CGImage と保存用データを生成する。
+    ///
+    /// 撮影データはセンサーの生の向きなので、EXIF ではなく
+    /// CapturedPhoto.orientation を適用する（プレビューと同じ一箇所の定義を使う）
+    private func processCapturedPhoto(_ photo: CapturedPhoto) -> (cgImage: CGImage, data: Data)? {
+        guard let source = CIImage(data: photo.data, options: [.applyOrientationProperty: false]) else {
             return nil
         }
+        let oriented = source.oriented(photo.orientation)
         let parameters = currentPreset?.filterParameters ?? FilterParameters()
-        var processed = imageProcessor.process(source, with: parameters, frameScale: frameScale)
+        var processed = imageProcessor.process(oriented, with: parameters, frameScale: frameScale)
         if isDateStampEnabled {
             processed = imageProcessor.stampDate(Date(), on: processed)
         }
