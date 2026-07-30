@@ -27,6 +27,16 @@ final class CameraViewModel {
     private(set) var isDateStampEnabled = false
     private(set) var availableLenses: [CameraLens] = []
     private(set) var currentLens: CameraLens = .wide
+    /// 中央フレームのスケール（視野に対する割合）。レンズ別の範囲にクランプされる
+    private(set) var frameScale: CGFloat = CameraFrame.defaultScale
+
+    /// 表示用の換算焦点距離（mm）
+    var displayFocalLength: Int {
+        CameraFrame.equivalentFocalLength(
+            baseFocalLength: currentLens.equivalentFocalLength,
+            scale: frameScale
+        )
+    }
     private(set) var shutterSound: ShutterSound = .classic
     private(set) var lastCapturedImage: UIImage?
     /// カスタムプリセット作成中の下書き
@@ -76,6 +86,10 @@ final class CameraViewModel {
         self.customPresetStore = customPresetStore ?? UserDefaultsCustomPresetStore()
         isDateStampEnabled = self.settingsStore.isDateStampEnabled
         shutterSound = self.settingsStore.shutterSound
+        frameScale = CameraFrame.clampScale(
+            CGFloat(self.settingsStore.frameScale),
+            baseFocalLength: currentLens.equivalentFocalLength
+        )
         loadPresets()
     }
 
@@ -175,16 +189,36 @@ final class CameraViewModel {
         // 位置が変わるとレンズは wide に戻る
         currentLens = .wide
         availableLenses = await cameraService.availableLenses()
+        setFrameScale(frameScale)
     }
 
+    /// mm プリセット: レンズを切り替え、フレームを全画角（= 基準 mm）に戻す
     func selectLens(_ lens: CameraLens) async {
-        guard status == .running, availableLenses.contains(lens), lens != currentLens else { return }
-        do {
-            try await cameraService.selectLens(lens)
-            currentLens = lens
-        } catch {
-            // 失敗時は現在のレンズのまま継続する
+        guard status == .running, availableLenses.contains(lens) else { return }
+        if lens != currentLens {
+            do {
+                try await cameraService.selectLens(lens)
+                currentLens = lens
+            } catch {
+                // 失敗時は現在のレンズのまま継続する
+                return
+            }
         }
+        setFrameScale(1.0)
+        commitFrameScale()
+    }
+
+    /// ピンチ中のフレームスケール更新（レンズ別範囲にクランプ）
+    func setFrameScale(_ scale: CGFloat) {
+        frameScale = CameraFrame.clampScale(
+            scale,
+            baseFocalLength: currentLens.equivalentFocalLength
+        )
+    }
+
+    /// ピンチ終了時に永続化する
+    func commitFrameScale() {
+        settingsStore.frameScale = Double(frameScale)
     }
 
     func toggleFlash() async {
@@ -284,7 +318,7 @@ final class CameraViewModel {
             return nil
         }
         let parameters = currentPreset?.filterParameters ?? FilterParameters()
-        var processed = imageProcessor.process(source, with: parameters)
+        var processed = imageProcessor.process(source, with: parameters, frameScale: frameScale)
         if isDateStampEnabled {
             processed = imageProcessor.stampDate(Date(), on: processed)
         }
