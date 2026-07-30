@@ -455,6 +455,70 @@ struct CameraViewModelTests {
     }
 
     @Test
+    func startSession_利用可能なレンズを読み込む() async {
+        let service = MockCameraService()
+        service.lenses = [.ultraWide, .wide, .telephoto]
+        let viewModel = makeViewModel(service: service)
+
+        await viewModel.startSession()
+
+        #expect(viewModel.availableLenses == [.ultraWide, .wide, .telephoto])
+        #expect(viewModel.currentLens == .wide)
+    }
+
+    @Test
+    func selectLens_利用可能なレンズへ切り替えられる() async {
+        let service = MockCameraService()
+        service.lenses = [.ultraWide, .wide]
+        let viewModel = makeViewModel(service: service)
+        await viewModel.startSession()
+
+        await viewModel.selectLens(.ultraWide)
+
+        #expect(viewModel.currentLens == .ultraWide)
+        #expect(service.selectedLenses == [.ultraWide])
+    }
+
+    @Test
+    func selectLens_利用不可のレンズは無視される() async {
+        let service = MockCameraService()
+        service.lenses = [.wide]
+        let viewModel = makeViewModel(service: service)
+        await viewModel.startSession()
+
+        await viewModel.selectLens(.telephoto)
+
+        #expect(viewModel.currentLens == .wide)
+        #expect(service.selectedLenses.isEmpty)
+    }
+
+    @Test
+    func selectLens_失敗時は現在のレンズを維持する() async {
+        let service = MockCameraService()
+        service.lenses = [.ultraWide, .wide]
+        service.selectLensError = CameraServiceError.deviceUnavailable
+        let viewModel = makeViewModel(service: service)
+        await viewModel.startSession()
+
+        await viewModel.selectLens(.ultraWide)
+
+        #expect(viewModel.currentLens == .wide)
+    }
+
+    @Test
+    func switchCamera_レンズがwideにリセットされる() async {
+        let service = MockCameraService()
+        service.lenses = [.ultraWide, .wide]
+        let viewModel = makeViewModel(service: service)
+        await viewModel.startSession()
+        await viewModel.selectLens(.ultraWide)
+
+        await viewModel.switchCamera()
+
+        #expect(viewModel.currentLens == .wide)
+    }
+
+    @Test
     func capturePhoto_成功時はCropとフィルターを適用した画像を保持する() async {
         let service = MockCameraService()
         service.captureResult = .success(Self.makeImageData())

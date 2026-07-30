@@ -6,6 +6,8 @@ final class MockCameraService: CameraService {
     var authorizationGranted = true
     var startError: Error?
     var switchCameraError: Error?
+    var selectLensError: Error?
+    var lenses: [CameraLens] = [.wide]
     private(set) var lastExposureBias: Float?
     private(set) var lastFlashEnabled: Bool?
     var captureResult: Result<Data, Error> = .failure(CameraServiceError.captureFailed)
@@ -51,6 +53,19 @@ final class MockCameraService: CameraService {
     func setExposureBias(_ bias: Float) async throws {
         lastExposureBias = bias
     }
+
+    func availableLenses() async -> [CameraLens] {
+        lenses
+    }
+
+    func selectLens(_ lens: CameraLens) async throws {
+        if let selectLensError {
+            throw selectLensError
+        }
+        selectedLenses.append(lens)
+    }
+
+    private(set) var selectedLenses: [CameraLens] = []
 
     func setFlashEnabled(_ isEnabled: Bool) async {
         lastFlashEnabled = isEnabled
