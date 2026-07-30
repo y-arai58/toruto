@@ -31,3 +31,4 @@
 | Date | Action | Note |
 |---|---|---|
 | 2026-07-30 | created | 実機フィードバック反映 |
+| 2026-07-30 | note | PR #23 を main にマージ完了。swiftc型チェック+実機確認は未確認のためstatusはin-progressのまま据え置き |
