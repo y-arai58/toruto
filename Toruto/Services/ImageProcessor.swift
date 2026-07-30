@@ -2,8 +2,8 @@ import CoreImage
 
 /// 中央フレーム Crop + CIFilter チェーンの適用を担う
 protocol ImageProcessor: AnyObject, Sendable {
-    /// 中央フレーム Crop → フィルターチェーンを適用した CIImage を返す（保存用）
-    func process(_ image: CIImage, with parameters: FilterParameters) -> CIImage
+    /// 中央フレーム Crop（frameScale = 視野に対する大きさ）→ フィルターチェーンを適用した CIImage を返す（保存用）
+    func process(_ image: CIImage, with parameters: FilterParameters, frameScale: CGFloat) -> CIImage
     /// Crop せずフィルターチェーンのみを適用する（全画角プレビュー用）
     func applyFilters(to image: CIImage, with parameters: FilterParameters) -> CIImage
     /// 保存・表示用に CGImage へ変換する

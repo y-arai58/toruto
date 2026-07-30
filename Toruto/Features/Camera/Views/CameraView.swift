@@ -6,6 +6,7 @@ struct CameraView: View {
     @State private var isExposureVisible = false
     @State private var exposureValue = 0.0
     @State private var isHistoryPresented = false
+    @State private var pinchBaseScale: CGFloat?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
 
@@ -101,13 +102,14 @@ struct CameraView: View {
 
             statusOverlay
 
-            if viewModel.availableLenses.count > 1 {
-                VStack {
-                    Spacer()
+            VStack(spacing: 8) {
+                Spacer()
+                focalLengthLabel
+                if viewModel.availableLenses.count > 1 {
                     lensSelector
-                        .padding(.bottom, 12)
                 }
             }
+            .padding(.bottom, 12)
 
             Color.white
                 .opacity(isFlashing ? 0.8 : 0)
@@ -116,12 +118,38 @@ struct CameraView: View {
         .aspectRatio(3 / 4, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 4))
         .frame(maxHeight: .infinity)
+        .gesture(frameScaleGesture)
+    }
+
+    /// ピンチで中央フレーム（換算焦点距離）を変更する
+    private var frameScaleGesture: some Gesture {
+        MagnifyGesture()
+            .onChanged { value in
+                let base = pinchBaseScale ?? viewModel.frameScale
+                pinchBaseScale = base
+                // ピンチイン（縮小）でフレームが小さくなる = 望遠側
+                viewModel.setFrameScale(base * value.magnification)
+            }
+            .onEnded { _ in
+                pinchBaseScale = nil
+                viewModel.commitFrameScale()
+            }
+    }
+
+    private var focalLengthLabel: some View {
+        Text("\(viewModel.displayFocalLength)mm")
+            .font(.caption.monospacedDigit().weight(.semibold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(.black.opacity(0.35), in: Capsule())
+            .allowsHitTesting(false)
     }
 
     /// 保存されない領域の暗幕 + 保存フレームの枠線
     private var frameOverlay: some View {
         GeometryReader { geometry in
-            let frame = CameraFrame.rect(in: geometry.size)
+            let frame = CameraFrame.rect(in: geometry.size, scale: viewModel.frameScale)
             ZStack {
                 Path { path in
                     path.addRect(CGRect(origin: .zero, size: geometry.size))
@@ -244,8 +272,8 @@ struct CameraView: View {
                     Text(lens.displayName)
                         .font(.caption2.weight(isSelected ? .bold : .regular))
                         .foregroundStyle(isSelected ? .yellow : .white)
-                        .frame(width: 36, height: 36)
-                        .background(.black.opacity(isSelected ? 0.6 : 0.35), in: Circle())
+                        .frame(width: 44, height: 36)
+                        .background(.black.opacity(isSelected ? 0.6 : 0.35), in: Capsule())
                 }
                 .accessibilityLabel("レンズ \(lens.displayName)")
                 .accessibilityAddTraits(isSelected ? .isSelected : [])

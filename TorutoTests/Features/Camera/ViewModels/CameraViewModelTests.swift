@@ -519,6 +519,82 @@ struct CameraViewModelTests {
     }
 
     @Test
+    func setFrameScale_レンズ別の範囲にクランプされる() {
+        let store = MockSettingsStore()
+        let viewModel = makeViewModel(settingsStore: store)
+
+        // 広角(26mm)の下限は 26/260 = 0.1
+        viewModel.setFrameScale(0.05)
+        #expect(viewModel.frameScale == 0.1)
+        #expect(viewModel.displayFocalLength == 260)
+
+        viewModel.setFrameScale(1.5)
+        #expect(viewModel.frameScale == 1.0)
+        #expect(viewModel.displayFocalLength == 26)
+    }
+
+    @Test
+    func displayFocalLength_スケールから換算mmを計算する() {
+        let viewModel = makeViewModel()
+
+        viewModel.setFrameScale(0.5)
+        #expect(viewModel.displayFocalLength == 52)
+
+        viewModel.setFrameScale(0.8)
+        #expect(viewModel.displayFocalLength == 33)
+    }
+
+    @Test
+    func commitFrameScale_永続化される() {
+        let store = MockSettingsStore()
+        let viewModel = makeViewModel(settingsStore: store)
+
+        viewModel.setFrameScale(0.6)
+        viewModel.commitFrameScale()
+
+        #expect(store.frameScale == 0.6)
+    }
+
+    @Test
+    func init_保存済みのフレームスケールを読み込む() {
+        let store = MockSettingsStore(frameScale: 0.6)
+        let viewModel = makeViewModel(settingsStore: store)
+
+        #expect(viewModel.frameScale == 0.6)
+    }
+
+    @Test
+    func selectLens_mmプリセットとしてフレームが全画角に戻る() async {
+        let service = MockCameraService()
+        service.lenses = [.ultraWide, .wide]
+        let store = MockSettingsStore()
+        let viewModel = makeViewModel(service: service, settingsStore: store)
+        await viewModel.startSession()
+        viewModel.setFrameScale(0.5)
+
+        await viewModel.selectLens(.ultraWide)
+
+        #expect(viewModel.currentLens == .ultraWide)
+        #expect(viewModel.frameScale == 1.0)
+        #expect(viewModel.displayFocalLength == 13)
+        #expect(store.frameScale == 1.0)
+    }
+
+    @Test
+    func capturePhoto_現在のフレームスケールで切り出される() async {
+        let service = MockCameraService()
+        service.captureResult = .success(Self.makeImageData())
+        let processor = MockImageProcessor()
+        let viewModel = makeViewModel(service: service, processor: processor)
+        await viewModel.startSession()
+        viewModel.setFrameScale(0.5)
+
+        await viewModel.capturePhoto()
+
+        #expect(processor.lastFrameScale == 0.5)
+    }
+
+    @Test
     func capturePhoto_成功時はCropとフィルターを適用した画像を保持する() async {
         let service = MockCameraService()
         service.captureResult = .success(Self.makeImageData())

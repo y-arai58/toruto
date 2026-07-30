@@ -4,11 +4,16 @@ enum CameraLens: String, CaseIterable, Codable {
     case wide
     case telephoto
 
-    var displayName: String {
+    /// 35mm 判換算の基準焦点距離（0.5x = 13mm / 1x = 26mm / 2x = 52mm）
+    var equivalentFocalLength: Double {
         switch self {
-        case .ultraWide: "0.5x"
-        case .wide: "1x"
-        case .telephoto: "2x"
+        case .ultraWide: 13
+        case .wide: 26
+        case .telephoto: 52
         }
+    }
+
+    var displayName: String {
+        "\(Int(equivalentFocalLength))mm"
     }
 }

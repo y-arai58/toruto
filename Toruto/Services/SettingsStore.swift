@@ -4,12 +4,15 @@ import Foundation
 protocol SettingsStore: AnyObject {
     var isDateStampEnabled: Bool { get set }
     var shutterSound: ShutterSound { get set }
+    /// 中央フレームのスケール（視野に対する割合）
+    var frameScale: Double { get set }
 }
 
 /// UserDefaults による標準実装
 final class UserDefaultsSettingsStore: SettingsStore {
     private static let dateStampKey = "isDateStampEnabled"
     private static let shutterSoundKey = "shutterSound"
+    private static let frameScaleKey = "frameScale"
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -30,5 +33,15 @@ final class UserDefaultsSettingsStore: SettingsStore {
             return sound
         }
         set { defaults.set(newValue.rawValue, forKey: Self.shutterSoundKey) }
+    }
+
+    var frameScale: Double {
+        get {
+            guard defaults.object(forKey: Self.frameScaleKey) != nil else {
+                return 0.8
+            }
+            return defaults.double(forKey: Self.frameScaleKey)
+        }
+        set { defaults.set(newValue, forKey: Self.frameScaleKey) }
     }
 }
