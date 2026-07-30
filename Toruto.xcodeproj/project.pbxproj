@@ -328,7 +328,7 @@
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "撮影した写真を保存するために使用します。";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "撮影履歴の表示とTorutoアルバムへの保存に使用します。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -356,7 +356,7 @@
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "撮影した写真を保存するために使用します。";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "撮影履歴の表示とTorutoアルバムへの保存に使用します。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
