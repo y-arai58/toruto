@@ -289,14 +289,16 @@ extension DefaultCameraService: AVCaptureVideoDataOutputSampleBufferDelegate {
         from connection: AVCaptureConnection
     ) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        // 接続が実際に適用した変換を読み戻し、不足分だけをここで補う。
+        let source = CIImage(cvPixelBuffer: pixelBuffer)
+        // 接続の videoRotationAngle は前面カメラで実態とずれるため使わず、
+        // 届いたバッファが横長か縦長かで必要な回転を決める。
         // プレビューは鏡と同じ見え方にしたいので、前面のときだけ鏡像にする
-        let orientation = CameraOrientation.remaining(
-            appliedRotation: connection.videoRotationAngle,
+        let orientation = CameraOrientation.forPreview(
+            bufferExtent: source.extent,
             appliedMirroring: connection.isVideoMirrored,
             mirrored: isUsingFrontCamera.value
         )
-        let image = CIImage(cvPixelBuffer: pixelBuffer).oriented(orientation)
+        let image = source.oriented(orientation)
         continuationsLock.lock()
         let continuations = Array(frameContinuations.values)
         continuationsLock.unlock()

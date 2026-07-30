@@ -102,6 +102,8 @@ struct CameraView: View {
 
             statusOverlay
 
+            previewSizeReadout
+
             if viewModel.availableLenses.count > 1 {
                 VStack {
                     Spacer()
@@ -170,6 +172,25 @@ struct CameraView: View {
             }
         }
         .allowsHitTesting(false)
+    }
+
+    /// 向き調査用の一時表示。プレビューに届いたフレームの大きさを出す。
+    /// 縦向きに補正できていれば「縦長」になる（TASK-024 の確認が済んだら削除する）
+    @ViewBuilder
+    private var previewSizeReadout: some View {
+        if let size = viewModel.previewFrameSize {
+            VStack {
+                Text("\(Int(size.width))x\(Int(size.height)) \(size.width > size.height ? "横長" : "縦長")")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(.black.opacity(0.5), in: Capsule())
+                    .padding(.top, 8)
+                Spacer()
+            }
+            .allowsHitTesting(false)
+        }
     }
 
     @ViewBuilder

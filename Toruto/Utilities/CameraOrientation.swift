@@ -46,6 +46,37 @@ enum CameraOrientation {
         }
     }
 
+    /// プレビュー用。**届いたバッファの形**から必要な向きを決める。
+    ///
+    /// `AVCaptureVideoDataOutput` の接続が返す `videoRotationAngle` は、
+    /// 前面カメラでは実際にバッファへ起きたことと一致しない。
+    /// 接続が「回転 0」と言っているのにバッファはすでに縦向きで届き、
+    /// そこへ 90 度足して横向きに倒していた（TASK-024）。
+    ///
+    /// 同じ計算を `AVCapturePhotoOutput` の接続に対して行ったときは正しく動いたため、
+    /// 食い違うのは映像データ出力側だけと判断した。
+    /// そこで回転量はプロパティではなく、バッファが横長か縦長かという観測から決める。
+    ///
+    /// - Parameters:
+    ///   - bufferExtent: 届いたバッファの範囲
+    ///   - appliedMirroring: 接続から読み戻した `isVideoMirrored`
+    ///   - mirrored: 最終的に鏡像にしたいか
+    static func forPreview(
+        bufferExtent: CGRect,
+        appliedMirroring: Bool,
+        mirrored: Bool
+    ) -> CGImagePropertyOrientation {
+        let isLandscape = bufferExtent.width > bufferExtent.height
+        let needsMirroring = mirrored != appliedMirroring
+
+        switch (isLandscape, needsMirroring) {
+        case (true, false): return .right         // 横長 → 90 度回して縦にする
+        case (true, true): return .leftMirrored   // 同上 + 左右反転
+        case (false, false): return .up           // すでに縦向き → 回さない
+        case (false, true): return .upMirrored    // 同上 + 左右反転
+        }
+    }
+
     /// 0 以上 360 未満に丸める
     private static func normalized(_ angle: CGFloat) -> CGFloat {
         let wrapped = angle.truncatingRemainder(dividingBy: 360)

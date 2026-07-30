@@ -20,6 +20,9 @@ final class CameraViewModel {
     static let exposureRange: ClosedRange<Double> = -2...2
 
     private(set) var status: Status = .idle
+    /// 向き調査用。プレビューに届いたフレームの大きさ。
+    /// 縦向きに補正できていれば縦長になる（TASK-024 の確認が済んだら削除する）
+    private(set) var previewFrameSize: CGSize?
     private(set) var isCapturing = false
     private(set) var isSwitchingCamera = false
     private(set) var exposureBias: Double = 0
@@ -98,14 +101,26 @@ final class CameraViewModel {
         let processor = imageProcessor
         let parameters = previewParameters
         return AsyncStream { continuation in
-            let task = Task.detached {
+            let task = Task.detached { [weak self] in
+                var reportedSize: CGSize?
                 for await frame in source {
-                    continuation.yield(processor.applyFilters(to: frame, with: parameters.value))
+                    let processed = processor.applyFilters(to: frame, with: parameters.value)
+                    continuation.yield(processed)
+                    // 大きさが変わったとき（= カメラ切替時）だけ MainActor へ知らせる
+                    let size = processed.extent.size
+                    if size != reportedSize {
+                        reportedSize = size
+                        await self?.reportPreviewFrameSize(size)
+                    }
                 }
                 continuation.finish()
             }
             continuation.onTermination = { _ in task.cancel() }
         }
+    }
+
+    private func reportPreviewFrameSize(_ size: CGSize) {
+        previewFrameSize = size
     }
 
     func selectPreset(_ preset: CameraPreset) {
