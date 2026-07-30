@@ -1,5 +1,19 @@
 # Lessons
 
+## 2026-07-30: 実機確認は Release + デバッガなしで行う
+
+- Debug は `SWIFT_OPTIMIZATION_LEVEL = -Onone`。このアプリは毎フレーム
+  Core Image のフィルタチェーンを組んで Metal で描くため、
+  最適化なし + LLDB 接続だと実機でも数 fps まで落ちて「固まった」ように見える
+- 端末側でアプリをタスクキルすると LLDB セッションが切れ、
+  Xcode が Run アクション全体を失敗として表示する。
+  **これはコンパイルエラーではない**（Report navigator でエラー 0 件なら実行セッションが切れただけ）
+- そのため scheme の LaunchAction は Release + デバッガなしにしてある
+  （`selectedDebuggerIdentifier = ""`）
+- 代わりに Xcode のコンソールに `print` が出なくなる。
+  ログが要るときは一時的にデバッガを戻すか、`Logger` を使って Console.app で見る
+- TestAction は Debug のままなので `⌘U` は今まで通り
+
 ## 2026-07-30: 設定した値ではなく読み戻した実測値を使う（TASK-024）
 
 - `AVCaptureConnection` への `videoRotationAngle` / `isVideoMirrored` は、
