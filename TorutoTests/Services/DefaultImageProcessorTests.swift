@@ -11,9 +11,15 @@ struct DefaultImageProcessorTests {
     }
 
     @Test
-    func 横長の入力が3対4に切り出され原点がゼロになる() {
+    func 中央フレーム80パーセントで切り出され原点がゼロになる() {
         let output = processor.process(makeImage(width: 4000, height: 3000), with: FilterParameters())
-        #expect(output.extent == CGRect(x: 0, y: 0, width: 2250, height: 3000))
+        #expect(output.extent == CGRect(x: 0, y: 0, width: 1800, height: 2400))
+    }
+
+    @Test
+    func applyFiltersはCropせず全画角のまま返す() {
+        let output = processor.applyFilters(to: makeImage(width: 3000, height: 4000), with: FilterParameters())
+        #expect(output.extent == CGRect(x: 0, y: 0, width: 3000, height: 4000))
     }
 
     @Test
@@ -32,7 +38,7 @@ struct DefaultImageProcessorTests {
         p.blurRadius = 2
 
         let output = processor.process(makeImage(width: 3000, height: 4000), with: p)
-        #expect(output.extent == CGRect(x: 0, y: 0, width: 3000, height: 4000))
+        #expect(output.extent == CGRect(x: 0, y: 0, width: 2400, height: 3200))
     }
 
     @Test
@@ -58,7 +64,7 @@ struct DefaultImageProcessorTests {
     func renderCGImageで実画像に変換できる() throws {
         let output = processor.process(makeImage(width: 300, height: 400), with: FilterParameters())
         let cgImage = try #require(processor.renderCGImage(from: output))
-        #expect(cgImage.width == 300)
-        #expect(cgImage.height == 400)
+        #expect(cgImage.width == 240)
+        #expect(cgImage.height == 320)
     }
 }
