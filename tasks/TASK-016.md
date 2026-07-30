@@ -1,8 +1,9 @@
 # TASK-016: レンズ切り替え（0.5x / 1x / 2x）
 
-- status: in-progress
+- status: done
 - priority: low
 - started_at: 2026-07-30
+- completed_at: 2026-07-30
 
 ## Goal
 
@@ -16,7 +17,7 @@
 - [x] 前面カメラではレンズ切替を表示しない。背面に戻すと 1x にリセットされる
 - [x] 切替後も露出補正が維持される
 - [x] ViewModel の単体テストがある
-- [ ] swiftc 型チェック通過 + ユーザー環境（実機）で動作確認
+- [x] swiftc 型チェック通過 + ユーザー環境（実機）で動作確認
 
 ## Sub Tasks
 
@@ -35,3 +36,4 @@
 | Date | Action | Note |
 |---|---|---|
 | 2026-07-30 | created | Phase 3 として開始 |
+| 2026-07-30 | completed | 実機で動作確認済み |
