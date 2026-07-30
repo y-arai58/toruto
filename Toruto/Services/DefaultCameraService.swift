@@ -206,12 +206,13 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         isConfigured = true
     }
 
-    /// sessionQueue 上で呼ぶこと。入力を指定位置・指定レンズのカメラへ付け替える
+    /// sessionQueue 上で呼ぶこと。入力を指定位置・指定レンズのカメラへ付け替える。
+    /// 付け替えた入力と出力の接続は commitConfiguration で確定するため、
+    /// 回転・ミラー・露出の適用は必ず commit の後に行う
     private func reconfigureInput(to newPosition: AVCaptureDevice.Position, lens newLens: CameraLens) throws {
         guard isConfigured else { throw CameraServiceError.configurationFailed }
 
         session.beginConfiguration()
-        defer { session.commitConfiguration() }
 
         if let currentInput {
             session.removeInput(currentInput)
@@ -222,14 +223,17 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
             // 失敗時は元の入力に戻す
             if let currentInput, session.canAddInput(currentInput) {
                 session.addInput(currentInput)
-                updateConnections()
             }
+            session.commitConfiguration()
+            updateConnections()
             throw CameraServiceError.deviceUnavailable
         }
         session.addInput(input)
         currentInput = input
         position = newPosition
         lens = newLens
+        session.commitConfiguration()
+
         updateConnections()
         // 切替後も露出補正を維持する
         try? applyExposureBias()
