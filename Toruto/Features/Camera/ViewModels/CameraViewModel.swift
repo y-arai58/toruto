@@ -24,14 +24,19 @@ final class CameraViewModel {
     private(set) var isSwitchingCamera = false
     private(set) var exposureBias: Double = 0
     private(set) var lastCapturedImage: UIImage?
+    /// 表示順のプリセット一覧（お気に入りが先頭、それ以外は定義順）
     private(set) var presets: [CameraPreset] = []
     private(set) var currentPreset: CameraPreset?
+    private(set) var favoritePresetIDs: Set<String> = []
     private(set) var saveError: SaveError?
 
     private let cameraService: any CameraService
     private let imageProcessor: any ImageProcessor
     private let presetRepository: any PresetRepository
     private let photoLibraryService: any PhotoLibraryService
+    private let favoriteStore: any FavoriteStore
+    /// presets.json の定義順
+    private var orderedPresets: [CameraPreset] = []
     /// プレビュー処理タスク（非 MainActor）と共有するフィルターパラメータ
     private let previewParameters = LockedValue(FilterParameters())
 
@@ -39,12 +44,14 @@ final class CameraViewModel {
         cameraService: (any CameraService)? = nil,
         imageProcessor: (any ImageProcessor)? = nil,
         presetRepository: (any PresetRepository)? = nil,
-        photoLibraryService: (any PhotoLibraryService)? = nil
+        photoLibraryService: (any PhotoLibraryService)? = nil,
+        favoriteStore: (any FavoriteStore)? = nil
     ) {
         self.cameraService = cameraService ?? DefaultCameraService()
         self.imageProcessor = imageProcessor ?? DefaultImageProcessor()
         self.presetRepository = presetRepository ?? BundlePresetRepository()
         self.photoLibraryService = photoLibraryService ?? DefaultPhotoLibraryService()
+        self.favoriteStore = favoriteStore ?? UserDefaultsFavoriteStore()
         loadPresets()
     }
 
@@ -68,6 +75,17 @@ final class CameraViewModel {
     func selectPreset(_ preset: CameraPreset) {
         currentPreset = preset
         previewParameters.value = preset.filterParameters
+    }
+
+    func toggleFavorite(_ preset: CameraPreset) {
+        let isFavorite = !favoritePresetIDs.contains(preset.id)
+        favoriteStore.setFavorite(preset.id, isFavorite: isFavorite)
+        favoritePresetIDs = favoriteStore.favoriteIDs()
+        presets = sortedForDisplay(orderedPresets)
+    }
+
+    func isFavorite(_ preset: CameraPreset) -> Bool {
+        favoritePresetIDs.contains(preset.id)
     }
 
     func switchCamera() async {
@@ -128,10 +146,19 @@ final class CameraViewModel {
     }
 
     private func loadPresets() {
-        presets = (try? presetRepository.loadPresets()) ?? []
+        orderedPresets = (try? presetRepository.loadPresets()) ?? []
+        favoritePresetIDs = favoriteStore.favoriteIDs()
+        presets = sortedForDisplay(orderedPresets)
         if let first = presets.first {
             selectPreset(first)
         }
+    }
+
+    /// お気に入りを先頭に、それ以外は定義順のまま並べる（安定ソート）
+    private func sortedForDisplay(_ presets: [CameraPreset]) -> [CameraPreset] {
+        let favorites = presets.filter { favoritePresetIDs.contains($0.id) }
+        let others = presets.filter { !favoritePresetIDs.contains($0.id) }
+        return favorites + others
     }
 
     /// 撮影データにプレビューと同じ Crop + フィルターを適用し、
