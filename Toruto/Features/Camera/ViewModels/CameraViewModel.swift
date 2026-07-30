@@ -37,7 +37,6 @@ final class CameraViewModel {
             scale: frameScale
         )
     }
-    private(set) var shutterSound: ShutterSound = .classic
     private(set) var lastCapturedImage: UIImage?
     /// カスタムプリセット作成中の下書き
     struct PresetDraft: Equatable {
@@ -85,7 +84,6 @@ final class CameraViewModel {
         self.shutterSoundPlayer = shutterSoundPlayer ?? SystemShutterSoundPlayer()
         self.customPresetStore = customPresetStore ?? UserDefaultsCustomPresetStore()
         isDateStampEnabled = self.settingsStore.isDateStampEnabled
-        shutterSound = self.settingsStore.shutterSound
         frameScale = CameraFrame.clampScale(
             CGFloat(self.settingsStore.frameScale),
             baseFocalLength: currentLens.equivalentFocalLength
@@ -231,11 +229,6 @@ final class CameraViewModel {
         settingsStore.isDateStampEnabled = isDateStampEnabled
     }
 
-    func selectShutterSound(_ sound: ShutterSound) {
-        shutterSound = sound
-        settingsStore.shutterSound = sound
-    }
-
     /// 露出補正（EV）。UI からは -2〜+2 の範囲で渡す
     func adjustExposure(_ bias: Double) async {
         guard status == .running else { return }
@@ -271,7 +264,7 @@ final class CameraViewModel {
         isCapturing = true
         saveError = nil
         defer { isCapturing = false }
-        shutterSoundPlayer.play(shutterSound)
+        shutterSoundPlayer.play()
         do {
             let data = try await cameraService.capturePhoto()
             guard let processed = processCapturedPhoto(data) else {

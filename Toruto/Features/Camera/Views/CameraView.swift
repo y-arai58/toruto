@@ -102,14 +102,13 @@ struct CameraView: View {
 
             statusOverlay
 
-            VStack(spacing: 8) {
-                Spacer()
-                focalLengthLabel
-                if viewModel.availableLenses.count > 1 {
+            if viewModel.availableLenses.count > 1 {
+                VStack {
+                    Spacer()
                     lensSelector
+                        .padding(.bottom, 12)
                 }
             }
-            .padding(.bottom, 12)
 
             Color.white
                 .opacity(isFlashing ? 0.8 : 0)
@@ -146,7 +145,7 @@ struct CameraView: View {
             .allowsHitTesting(false)
     }
 
-    /// 保存されない領域の暗幕 + 保存フレームの枠線
+    /// 保存されない領域の暗幕 + 保存フレームの枠線 + フレーム上辺の mm ラベル
     private var frameOverlay: some View {
         GeometryReader { geometry in
             let frame = CameraFrame.rect(in: geometry.size, scale: viewModel.frameScale)
@@ -164,6 +163,10 @@ struct CameraView: View {
                     .strokeBorder(.white.opacity(0.6), lineWidth: 1)
                     .frame(width: frame.width, height: frame.height)
                     .position(x: frame.midX, y: frame.midY)
+
+                // フレームが上端に近いときは内側に退避する
+                focalLengthLabel
+                    .position(x: frame.midX, y: max(frame.minY - 18, 18))
             }
         }
         .allowsHitTesting(false)
@@ -198,10 +201,10 @@ struct CameraView: View {
         }
     }
 
-    /// プリセット名を中央固定にするため ZStack で重ねる
+    /// タイトルを中央固定にするため ZStack で重ねる
     private var topBar: some View {
         ZStack {
-            Text(viewModel.currentPreset?.displayName ?? "Toruto")
+            Text("Toruto")
                 .font(.headline)
                 .foregroundStyle(.white)
 
@@ -215,26 +218,6 @@ struct CameraView: View {
                         .frame(width: 44, height: 44)
                 }
                 .accessibilityLabel(viewModel.isFlashEnabled ? "フラッシュをオフ" : "フラッシュをオン")
-
-                Menu {
-                    ForEach(ShutterSound.allCases, id: \.self) { sound in
-                        Button {
-                            viewModel.selectShutterSound(sound)
-                        } label: {
-                            if sound == viewModel.shutterSound {
-                                Label(sound.displayName, systemImage: "checkmark")
-                            } else {
-                                Text(sound.displayName)
-                            }
-                        }
-                    }
-                } label: {
-                    Image(systemName: "speaker.wave.2")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.7))
-                        .frame(width: 44, height: 44)
-                }
-                .accessibilityLabel("シャッター音を選ぶ")
 
                 Spacer()
 

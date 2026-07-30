@@ -1,9 +1,9 @@
 @testable import Toruto
 
 final class MockShutterSoundPlayer: ShutterSoundPlayer {
-    private(set) var playedSounds: [ShutterSound] = []
+    private(set) var playCallCount = 0
 
-    func play(_ sound: ShutterSound) {
-        playedSounds.append(sound)
+    func play() {
+        playCallCount += 1
     }
 }
