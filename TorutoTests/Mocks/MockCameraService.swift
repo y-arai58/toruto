@@ -6,6 +6,7 @@ final class MockCameraService: CameraService {
     var authorizationGranted = true
     var startError: Error?
     var switchCameraError: Error?
+    private(set) var lastExposureBias: Float?
     var captureResult: Result<Data, Error> = .failure(CameraServiceError.captureFailed)
 
     private(set) var startCallCount = 0
@@ -44,6 +45,10 @@ final class MockCameraService: CameraService {
         if let switchCameraError {
             throw switchCameraError
         }
+    }
+
+    func setExposureBias(_ bias: Float) async throws {
+        lastExposureBias = bias
     }
 
     func capturePhoto() async throws -> Data {

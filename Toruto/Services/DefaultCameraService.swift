@@ -13,6 +13,7 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
     private var isConfigured = false
     private var position: AVCaptureDevice.Position = .back
     private var currentInput: AVCaptureDeviceInput?
+    private var exposureBias: Float = 0
 
     private let continuationsLock = NSLock()
     private var frameContinuations: [UUID: AsyncStream<CIImage>.Continuation] = [:]
@@ -81,6 +82,20 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
             sessionQueue.async {
                 do {
                     try self.reconfigureInput(to: self.position == .back ? .front : .back)
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    func setExposureBias(_ bias: Float) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            sessionQueue.async {
+                do {
+                    self.exposureBias = bias
+                    try self.applyExposureBias()
                     continuation.resume()
                 } catch {
                     continuation.resume(throwing: error)
@@ -166,6 +181,23 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         currentInput = input
         position = newPosition
         updateConnections()
+        // 切替後も露出補正を維持する
+        try? applyExposureBias()
+    }
+
+    /// sessionQueue 上で呼ぶこと。現在の入力デバイスに露出補正を適用する
+    private func applyExposureBias() throws {
+        guard let device = currentInput?.device else {
+            throw CameraServiceError.configurationFailed
+        }
+        let clamped = min(max(exposureBias, device.minExposureTargetBias), device.maxExposureTargetBias)
+        do {
+            try device.lockForConfiguration()
+            defer { device.unlockForConfiguration() }
+            device.setExposureTargetBias(clamped)
+        } catch {
+            throw CameraServiceError.configurationFailed
+        }
     }
 
     /// sessionQueue 上で呼ぶこと。ポートレート固定 + 前面カメラはミラー表示

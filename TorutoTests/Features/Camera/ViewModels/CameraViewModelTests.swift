@@ -166,6 +166,41 @@ struct CameraViewModelTests {
     }
 
     @Test
+    func adjustExposure_範囲内の値をサービスへ渡す() async {
+        let service = MockCameraService()
+        let viewModel = makeViewModel(service: service)
+        await viewModel.startSession()
+
+        await viewModel.adjustExposure(1.5)
+
+        #expect(viewModel.exposureBias == 1.5)
+        #expect(service.lastExposureBias == 1.5)
+    }
+
+    @Test
+    func adjustExposure_範囲外の値はクランプされる() async {
+        let service = MockCameraService()
+        let viewModel = makeViewModel(service: service)
+        await viewModel.startSession()
+
+        await viewModel.adjustExposure(5)
+
+        #expect(viewModel.exposureBias == 2)
+        #expect(service.lastExposureBias == 2)
+    }
+
+    @Test
+    func adjustExposure_起動前は何もしない() async {
+        let service = MockCameraService()
+        let viewModel = makeViewModel(service: service)
+
+        await viewModel.adjustExposure(1)
+
+        #expect(viewModel.exposureBias == 0)
+        #expect(service.lastExposureBias == nil)
+    }
+
+    @Test
     func capturePhoto_成功時はCropとフィルターを適用した画像を保持する() async {
         let service = MockCameraService()
         service.captureResult = .success(Self.makeImageData())
