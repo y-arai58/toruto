@@ -327,31 +327,16 @@ struct CameraViewModelTests {
     }
 
     @Test
-    func selectShutterSound_選択が永続化される() {
-        let store = MockSettingsStore()
-        let viewModel = makeViewModel(settingsStore: store)
-
-        viewModel.selectShutterSound(.film)
-
-        #expect(viewModel.shutterSound == .film)
-        #expect(store.shutterSound == .film)
-    }
-
-    @Test
-    func capturePhoto_選択中のシャッター音が鳴る() async {
+    func capturePhoto_シャッター音が鳴る() async {
         let service = MockCameraService()
         service.captureResult = .success(Self.makeImageData())
         let player = MockShutterSoundPlayer()
-        let viewModel = makeViewModel(
-            service: service,
-            settingsStore: MockSettingsStore(shutterSound: .digital),
-            soundPlayer: player
-        )
+        let viewModel = makeViewModel(service: service, soundPlayer: player)
         await viewModel.startSession()
 
         await viewModel.capturePhoto()
 
-        #expect(player.playedSounds == [.digital])
+        #expect(player.playCallCount == 1)
     }
 
     @Test
@@ -361,7 +346,7 @@ struct CameraViewModelTests {
 
         await viewModel.capturePhoto()
 
-        #expect(player.playedSounds.isEmpty)
+        #expect(player.playCallCount == 0)
     }
 
     @Test
