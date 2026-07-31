@@ -1,14 +1,30 @@
 import CoreImage
 import CoreImage.CIFilterBuiltins
+import Foundation
 
 /// Core Image による ImageProcessor の標準実装。
 /// CIContext は生成コストが高いため 1 インスタンスで使い回す。
 /// CIContext / CIFilter 生成はスレッドセーフなため @unchecked Sendable とする。
 final class DefaultImageProcessor: ImageProcessor, @unchecked Sendable {
-    private let ciContext: CIContext
+    private let contextFactory: @Sendable () -> CIContext
+    private let contextLock = NSLock()
+    private var cachedContext: CIContext?
 
-    init(ciContext: CIContext = CIContext()) {
-        self.ciContext = ciContext
+    /// CIContext は生成に数十〜数百 ms かかるが撮影・書き出し時にしか使わないため、
+    /// アプリ起動時ではなく初回利用時に生成する
+    init(contextFactory: @escaping @Sendable () -> CIContext = { CIContext() }) {
+        self.contextFactory = contextFactory
+    }
+
+    private var ciContext: CIContext {
+        contextLock.lock()
+        defer { contextLock.unlock() }
+        if let cachedContext {
+            return cachedContext
+        }
+        let context = contextFactory()
+        cachedContext = context
+        return context
     }
 
     func process(_ image: CIImage, with parameters: FilterParameters, frameScale: CGFloat) -> CIImage {
