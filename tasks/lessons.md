@@ -54,7 +54,10 @@
 - Foundation の atomic write（/var/folders）と CoreSimulatorService 接続が遮断されるため、
   xcodebuild はセッション内（`!` プレフィックス含む）では常に失敗する
 - 検証の代替手段:
-  - コンパイル: `swiftc -typecheck -target arm64-apple-ios17.0-simulator -Xfrontend -disable-sandbox`
-    （Swift Testing のテストは `-plugin-path .../swift/host/plugins/testing` を追加）
+  - コンパイル: `bash Design/typecheck.sh`（アプリのみ）/ `bash Design/typecheck.sh --tests`（+ テスト）
+    - テストは `@testable import Toruto` が要るため、アプリのソースから一度
+      `-emit-module` で `.swiftmodule` を作り、それを `-I` で読ませてから型チェックする
+    - Swift Testing の macro plugin は `.../usr/lib/swift/host/plugins/testing`
+      （`plugins` 直下ではなくその一段下）にある。ここを外すと `TestingMacros` が見つからず失敗する
   - pbxproj: `plutil -lint`、scheme: `xmllint --noout`
 - 実ビルド・テスト実行はユーザーの Xcode / 通常ターミナルに依頼する

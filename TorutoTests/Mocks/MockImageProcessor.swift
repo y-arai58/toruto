@@ -11,12 +11,15 @@ final class MockImageProcessor: ImageProcessor, @unchecked Sendable {
     private(set) var lastFrameScale: CGFloat?
     /// process に渡された画像の extent（向き補正の検証に使う）
     private(set) var lastProcessExtent: CGRect?
+    /// process に渡された画像そのもの（ピクセル単位の向き検証に使う）
+    private(set) var lastProcessedImage: CIImage?
 
     func process(_ image: CIImage, with parameters: FilterParameters, frameScale: CGFloat) -> CIImage {
         processCallCount += 1
         lastParameters = parameters
         lastFrameScale = frameScale
         lastProcessExtent = image.extent
+        lastProcessedImage = image
         return image
     }
 
