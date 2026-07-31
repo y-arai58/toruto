@@ -102,8 +102,6 @@ struct CameraView: View {
 
             statusOverlay
 
-            previewSizeReadout
-
             if viewModel.availableLenses.count > 1 {
                 VStack {
                     Spacer()
@@ -172,36 +170,6 @@ struct CameraView: View {
             }
         }
         .allowsHitTesting(false)
-    }
-
-    /// 向き調査用の一時表示。プレビューに届いたフレームの大きさを出す。
-    /// 縦向きに補正できていれば「縦長」になる（TASK-024 の確認が済んだら削除する）
-    @ViewBuilder
-    private var previewSizeReadout: some View {
-        VStack(spacing: 2) {
-            if let size = viewModel.previewFrameSize {
-                readoutLabel("表示 \(Self.describe(size))")
-            }
-            if let size = viewModel.lastPhotoSize {
-                readoutLabel("写真 \(Self.describe(size))")
-            }
-            Spacer()
-        }
-        .padding(.top, 8)
-        .allowsHitTesting(false)
-    }
-
-    private func readoutLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.caption2.monospacedDigit())
-            .foregroundStyle(.white)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(.black.opacity(0.5), in: Capsule())
-    }
-
-    private static func describe(_ size: CGSize) -> String {
-        "\(Int(size.width))x\(Int(size.height)) \(size.width > size.height ? "横長" : "縦長")"
     }
 
     @ViewBuilder

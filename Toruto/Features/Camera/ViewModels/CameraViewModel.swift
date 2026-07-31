@@ -20,12 +20,6 @@ final class CameraViewModel {
     static let exposureRange: ClosedRange<Double> = -2...2
 
     private(set) var status: Status = .idle
-    /// 向き調査用。プレビューに届いたフレームの大きさ。
-    /// 縦向きに補正できていれば縦長になる（TASK-024 の確認が済んだら削除する）
-    private(set) var previewFrameSize: CGSize?
-    /// 向き調査用。直近の撮影データを EXIF 適用後に読んだ大きさ。
-    /// 縦長になっていれば EXIF が正しく効いている（同上）
-    private(set) var lastPhotoSize: CGSize?
     private(set) var isCapturing = false
     private(set) var isSwitchingCamera = false
     private(set) var exposureBias: Double = 0
@@ -104,26 +98,14 @@ final class CameraViewModel {
         let processor = imageProcessor
         let parameters = previewParameters
         return AsyncStream { continuation in
-            let task = Task.detached { [weak self] in
-                var reportedSize: CGSize?
+            let task = Task.detached {
                 for await frame in source {
-                    let processed = processor.applyFilters(to: frame, with: parameters.value)
-                    continuation.yield(processed)
-                    // 大きさが変わったとき（= カメラ切替時）だけ MainActor へ知らせる
-                    let size = processed.extent.size
-                    if size != reportedSize {
-                        reportedSize = size
-                        await self?.reportPreviewFrameSize(size)
-                    }
+                    continuation.yield(processor.applyFilters(to: frame, with: parameters.value))
                 }
                 continuation.finish()
             }
             continuation.onTermination = { _ in task.cancel() }
         }
-    }
-
-    private func reportPreviewFrameSize(_ size: CGSize) {
-        previewFrameSize = size
     }
 
     func selectPreset(_ preset: CameraPreset) {
@@ -335,7 +317,6 @@ final class CameraViewModel {
             return nil
         }
         let oriented = photo.isFromFrontCamera ? source.oriented(.upMirrored) : source
-        lastPhotoSize = oriented.extent.size
         let parameters = currentPreset?.filterParameters ?? FilterParameters()
         var processed = imageProcessor.process(oriented, with: parameters, frameScale: frameScale)
         if isDateStampEnabled {
