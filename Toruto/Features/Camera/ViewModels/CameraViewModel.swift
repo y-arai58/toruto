@@ -278,8 +278,8 @@ final class CameraViewModel {
         defer { isCapturing = false }
         shutterSoundPlayer.play()
         do {
-            let data = try await cameraService.capturePhoto()
-            guard let processed = processCapturedPhoto(data) else {
+            let photo = try await cameraService.capturePhoto()
+            guard let processed = processCapturedPhoto(photo) else {
                 saveError = .failed
                 return
             }
@@ -316,14 +316,21 @@ final class CameraViewModel {
         return favorites + others
     }
 
-    /// 撮影データにプレビューと同じ Crop + フィルターを適用し、
-    /// サムネイル用 CGImage と保存用データを生成する
-    private func processCapturedPhoto(_ data: Data) -> (cgImage: CGImage, data: Data)? {
-        guard let source = CIImage(data: data, options: [.applyOrientationProperty: true]) else {
+    /// 撮影データに Crop + フィルターを適用し、
+    /// サムネイル用 CGImage と保存用データを生成する。
+    ///
+    /// 向きは AVFoundation が EXIF に書いたものをそのまま適用する。
+    /// 接続のプロパティから自前で計算すると実態とずれる（TASK-024）。
+    ///
+    /// 前面カメラのプレビューは鏡像なので、保存画像も左右反転して見え方を揃える。
+    /// 反転は Crop・フィルター・日付スタンプより前に行う（スタンプは反転させない）
+    private func processCapturedPhoto(_ photo: CapturedPhoto) -> (cgImage: CGImage, data: Data)? {
+        guard let source = CIImage(data: photo.data, options: [.applyOrientationProperty: true]) else {
             return nil
         }
+        let oriented = photo.isFromFrontCamera ? source.oriented(.upMirrored) : source
         let parameters = currentPreset?.filterParameters ?? FilterParameters()
-        var processed = imageProcessor.process(source, with: parameters, frameScale: frameScale)
+        var processed = imageProcessor.process(oriented, with: parameters, frameScale: frameScale)
         if isDateStampEnabled {
             processed = imageProcessor.stampDate(Date(), on: processed)
         }

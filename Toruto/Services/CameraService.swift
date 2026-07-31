@@ -1,5 +1,13 @@
 import CoreImage
 
+/// 撮影結果。
+/// 向きは AVFoundation が EXIF に書くが、鏡像にするかは撮影時のカメラ位置で決まる
+struct CapturedPhoto: Sendable {
+    let data: Data
+    /// 前面カメラで撮ったか。保存画像を左右反転するかの判断に使う
+    let isFromFrontCamera: Bool
+}
+
 /// カメラ操作で発生するエラー
 enum CameraServiceError: Error {
     case permissionDenied
@@ -10,7 +18,8 @@ enum CameraServiceError: Error {
 
 /// AVCaptureSession の管理・プレビューフレーム供給・静止画撮影を担う
 protocol CameraService: AnyObject {
-    /// プレビュー用フレームのストリームを生成する（呼び出しごとに新しいストリームを返す）
+    /// プレビュー用フレームのストリームを生成する（呼び出しごとに新しいストリームを返す）。
+    /// フレームは縦持ちの表示向きに補正済みで届く
     func makePreviewStream() -> AsyncStream<CIImage>
     /// カメラ権限を確認し、未決定ならリクエストする
     func requestAuthorization() async -> Bool
@@ -28,6 +37,7 @@ protocol CameraService: AnyObject {
     func setExposureBias(_ bias: Float) async throws
     /// フラッシュの ON/OFF を設定する（非対応デバイスでは撮影時に無視される）
     func setFlashEnabled(_ isEnabled: Bool) async
-    /// 静止画を撮影し、画像データを返す
-    func capturePhoto() async throws -> Data
+    /// 静止画を撮影する。
+    /// 向きは AVFoundation が書いた EXIF に入っているため、読み出し側で適用する
+    func capturePhoto() async throws -> CapturedPhoto
 }

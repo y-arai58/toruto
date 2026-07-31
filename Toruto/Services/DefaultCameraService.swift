@@ -1,5 +1,6 @@
 import AVFoundation
 import CoreImage
+import ImageIO
 
 /// AVCaptureSession を用いた CameraService の標準実装。
 /// セッション操作はすべて sessionQueue 上で行う。
@@ -16,6 +17,8 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
     private var currentInput: AVCaptureDeviceInput?
     private var exposureBias: Float = 0
     private var isFlashEnabled = false
+    /// 前面カメラを使っているか。videoQueue から読むためロックで保護する
+    private let isUsingFrontCamera = LockedValue(false)
 
     private let continuationsLock = NSLock()
     private var frameContinuations: [UUID: AsyncStream<CIImage>.Continuation] = [:]
@@ -150,8 +153,8 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         }
     }
 
-    func capturePhoto() async throws -> Data {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
+    func capturePhoto() async throws -> CapturedPhoto {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CapturedPhoto, Error>) in
             sessionQueue.async {
                 guard self.session.isRunning else {
                     continuation.resume(throwing: CameraServiceError.captureFailed)
@@ -161,9 +164,16 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
                 if self.isFlashEnabled, self.photoOutput.supportedFlashModes.contains(.on) {
                     settings.flashMode = .on
                 }
+                // 向きは接続のプロパティから計算しない。
+                // それらは実際にバッファへ起きたことと一致しないため、
+                // 写真は AVFoundation が書いた EXIF をそのまま使う（読み出し側で適用する）。
+                // 撮影中にカメラを切り替えられても、この撮影の位置は確定させておく
+                let isFromFrontCamera = (self.position == .front)
                 let uniqueID = settings.uniqueID
                 let delegate = PhotoCaptureDelegate { [weak self] result in
-                    continuation.resume(with: result)
+                    continuation.resume(with: result.map {
+                        CapturedPhoto(data: $0, isFromFrontCamera: isFromFrontCamera)
+                    })
                     self?.sessionQueue.async {
                         self?.inFlightCaptures[uniqueID] = nil
                     }
@@ -202,13 +212,13 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         session.addOutput(videoOutput)
         session.addOutput(photoOutput)
 
-        updateConnections()
+        updateOrientation()
         isConfigured = true
     }
 
     /// sessionQueue 上で呼ぶこと。入力を指定位置・指定レンズのカメラへ付け替える。
-    /// 付け替えた入力と出力の接続は commitConfiguration で確定するため、
-    /// 回転・ミラー・露出の適用は必ず commit の後に行う
+    /// 向きの補正はコード側（CameraOrientation）で行うため、
+    /// ここでは接続の変換を無効のまま保ち、表示向きだけを更新する
     private func reconfigureInput(to newPosition: AVCaptureDevice.Position, lens newLens: CameraLens) throws {
         guard isConfigured else { throw CameraServiceError.configurationFailed }
 
@@ -225,7 +235,7 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
                 session.addInput(currentInput)
             }
             session.commitConfiguration()
-            updateConnections()
+            updateOrientation()
             throw CameraServiceError.deviceUnavailable
         }
         session.addInput(input)
@@ -234,7 +244,7 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         lens = newLens
         session.commitConfiguration()
 
-        updateConnections()
+        updateOrientation()
         // 切替後も露出補正を維持する
         try? applyExposureBias()
     }
@@ -262,18 +272,9 @@ final class DefaultCameraService: NSObject, CameraService, @unchecked Sendable {
         }
     }
 
-    /// sessionQueue 上で呼ぶこと。ポートレート固定 + 前面カメラはミラー表示
-    private func updateConnections() {
-        for connection in [videoOutput.connection(with: .video), photoOutput.connection(with: .video)] {
-            guard let connection else { continue }
-            if connection.isVideoRotationAngleSupported(90) {
-                connection.videoRotationAngle = 90
-            }
-            if connection.isVideoMirroringSupported {
-                connection.automaticallyAdjustsVideoMirroring = false
-                connection.isVideoMirrored = (position == .front)
-            }
-        }
+    /// sessionQueue 上で呼ぶこと。videoQueue から参照する鏡像フラグを更新する
+    private func updateOrientation() {
+        isUsingFrontCamera.value = (position == .front)
     }
 }
 
@@ -284,7 +285,16 @@ extension DefaultCameraService: AVCaptureVideoDataOutputSampleBufferDelegate {
         from connection: AVCaptureConnection
     ) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        let image = CIImage(cvPixelBuffer: pixelBuffer)
+        let source = CIImage(cvPixelBuffer: pixelBuffer)
+        // 接続の videoRotationAngle は前面カメラで実態とずれるため使わず、
+        // 届いたバッファが横長か縦長かで必要な回転を決める。
+        // プレビューは鏡と同じ見え方にしたいので、前面のときだけ鏡像にする
+        let orientation = CameraOrientation.forPreview(
+            bufferExtent: source.extent,
+            appliedMirroring: connection.isVideoMirrored,
+            mirrored: isUsingFrontCamera.value
+        )
+        let image = source.oriented(orientation)
         continuationsLock.lock()
         let continuations = Array(frameContinuations.values)
         continuationsLock.unlock()

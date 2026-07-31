@@ -1,3 +1,4 @@
+import CoreImage
 import Testing
 import UIKit
 @testable import Toruto
@@ -619,6 +620,67 @@ struct CameraViewModelTests {
     }
 
     @Test
+    func capturePhoto_背面は撮影データの大きさがそのまま処理に渡る() async {
+        // 向きは EXIF 任せなので、EXIF を持たないデータは縦横がそのまま渡る
+        let service = MockCameraService()
+        service.captureResult = .success(Self.makeImageData(width: 6, height: 4))
+        let processor = MockImageProcessor()
+        let viewModel = makeViewModel(service: service, processor: processor)
+        await viewModel.startSession()
+
+        await viewModel.capturePhoto()
+
+        #expect(processor.lastProcessExtent?.width == 6)
+        #expect(processor.lastProcessExtent?.height == 4)
+    }
+
+    @Test
+    func capturePhoto_前面は左右反転しても大きさは変わらない() async {
+        // 左右反転は縦横を入れ替えないので、大きさはそのまま
+        let service = MockCameraService()
+        service.captureResult = .success(Self.makeImageData(width: 6, height: 4))
+        service.captureIsFromFrontCamera = true
+        let processor = MockImageProcessor()
+        let viewModel = makeViewModel(service: service, processor: processor)
+        await viewModel.startSession()
+
+        await viewModel.capturePhoto()
+
+        #expect(processor.lastProcessExtent?.width == 6)
+        #expect(processor.lastProcessExtent?.height == 4)
+    }
+
+    @Test
+    func capturePhoto_前面は左半分と右半分が入れ替わる() async throws {
+        // 左を黒・右を白にした画像で、左右反転が実際に起きているかをピクセルで確認する
+        let service = MockCameraService()
+        service.captureResult = .success(Self.makeHalfBlackHalfWhiteImageData())
+        service.captureIsFromFrontCamera = true
+        let processor = MockImageProcessor()
+        let viewModel = makeViewModel(service: service, processor: processor)
+        await viewModel.startSession()
+
+        await viewModel.capturePhoto()
+
+        let image = try #require(processor.lastProcessedImage)
+        let context = CIContext()
+        var leftPixel = [UInt8](repeating: 0, count: 4)
+        var rightPixel = [UInt8](repeating: 0, count: 4)
+        context.render(
+            image, toBitmap: &leftPixel, rowBytes: 4,
+            bounds: CGRect(x: 1, y: 2, width: 1, height: 1), format: .RGBA8, colorSpace: nil
+        )
+        context.render(
+            image, toBitmap: &rightPixel, rowBytes: 4,
+            bounds: CGRect(x: 4, y: 2, width: 1, height: 1), format: .RGBA8, colorSpace: nil
+        )
+
+        // 反転前は左が黒(0)・右が白(255)だったので、反転後は逆になっているはず
+        #expect(leftPixel[0] > 200)
+        #expect(rightPixel[0] < 50)
+    }
+
+    @Test
     func capturePhoto_成功時は加工済みデータを保存する() async {
         let service = MockCameraService()
         service.captureResult = .success(Self.makeImageData())
@@ -687,11 +749,28 @@ struct CameraViewModelTests {
         #expect(viewModel.isCapturing == false)
     }
 
-    private static func makeImageData() -> Data {
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4))
+    private static func makeImageData(width: CGFloat = 4, height: CGFloat = 4) -> Data {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format)
         return renderer.pngData { context in
             UIColor.black.setFill()
-            context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+            context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        }
+    }
+
+    /// 左右反転の検証用。6x4 の左半分を黒、右半分を白にする
+    private static func makeHalfBlackHalfWhiteImageData() -> Data {
+        let width: CGFloat = 6
+        let height: CGFloat = 4
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format)
+        return renderer.pngData { context in
+            UIColor.black.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: width / 2, height: height))
+            UIColor.white.setFill()
+            context.fill(CGRect(x: width / 2, y: 0, width: width / 2, height: height))
         }
     }
 }
